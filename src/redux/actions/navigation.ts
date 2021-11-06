@@ -1,0 +1,1 @@
+export const setNavigation = (data:any)=>({type:"navigation",data})
