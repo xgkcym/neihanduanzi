@@ -4,16 +4,27 @@ import Video from 'react-native-video'
 import getStringTime from '../../util/getStringTime'
 import { windowHeight, windowWidth } from '../../util/style'
 import { Slider, Tooltip, Text as EText } from 'react-native-elements';
+import request, { baseURL } from '../../util/request'
+import { connect } from 'react-redux'
+import stringfyquery from '../../util/stringfyquery'
+import { Alert } from 'react-native'
 let resizeMode: "stretch" | "contain" | "cover" | "none" | undefined;
 interface MyVideoProps {
   VideoDate?: any,
-  gotoVideoInfo?: Function
+  gotoVideoInfo?: Function,
+  userInfo?: any
 }
 let videoDate: any
-export default class MyVideo extends Component<MyVideoProps, any>{
+class Index extends Component<MyVideoProps, any>{
   constructor(prop: any) {
     super(prop)
-    this.state.videoDate = this.props.VideoDate
+    let VideoDate = this.props.VideoDate
+    this.state.videoDate = VideoDate
+    let commentNum = VideoDate.comment.length
+    for (let i = 0; i < VideoDate.comment.length; i++) {
+      commentNum+=VideoDate.comment[i].comment.length
+    }
+    this.state.commentNum = commentNum
   }
   player: any
   state = {
@@ -24,15 +35,15 @@ export default class MyVideo extends Component<MyVideoProps, any>{
     videoHeight: 0,
     videoWidth: 0,
     resizeMode: resizeMode,
-    paused: false,
+    paused: true,
     videoEnd: false,
     isEnd: false,
-    videoMount: false
+    videoMount: false,
+    commentNum: 0
   }
   componentDidMount() {
-    setTimeout(() => {
-      this.setState({ paused: true })
-    })
+
+
   }
   //视频加载时
   onLoad = (event: any) => {
@@ -104,36 +115,98 @@ export default class MyVideo extends Component<MyVideoProps, any>{
       this.props.gotoVideoInfo()
     }
   }
+  // 点赞
+  likeArticle = async () => {
+    const { videoDate } = this.state
+
+    if (!videoDate.islike) {
+      const like = await request.post('/like_article', { uid: this.props.userInfo.uid, article_id: videoDate.article_id })
+      await request.delete('/unlike_article' + stringfyquery({ uid: this.props.userInfo.uid, article_id: videoDate.article_id }))
+      if (like.status == 200) {
+        if (videoDate.isunlike) {
+          this.setState({ videoDate: { ...videoDate, islike: true, likeNum: videoDate.likeNum + 1, isunlike: false, unlikeNum: videoDate.unlikeNum - 1 } })
+        } else {
+          this.setState({ videoDate: { ...videoDate, islike: true, likeNum: videoDate.likeNum + 1 } })
+        }
+      }
+    } else {
+      const unlike = await request.delete('/like_article' + stringfyquery({ uid: this.props.userInfo.uid, article_id: videoDate.article_id }))
+      if (unlike.status == 200) {
+        this.setState({ videoDate: { ...videoDate, islike: false, likeNum: videoDate.likeNum - 1 } })
+      }
+    }
+  }
+  // 不喜欢
+  unlikeArticle = async () => {
+    const { videoDate } = this.state
+    if (!videoDate.isunlike) {
+      const unlike = await request.post('/unlike_article', { uid: this.props.userInfo.uid, article_id: videoDate.article_id })
+      await request.delete('/like_article' + stringfyquery({ uid: this.props.userInfo.uid, article_id: videoDate.article_id }))
+      if (unlike.status == 200) {
+        if (videoDate.islike) {
+          this.setState({ videoDate: { ...videoDate, isunlike: true, unlikeNum: videoDate.unlikeNum + 1, islike: false, likeNum: videoDate.likeNum - 1 } })
+        } else {
+          this.setState({ videoDate: { ...videoDate, isunlike: true, unlikeNum: videoDate.unlikeNum + 1 } })
+        }
+      }
+    } else {
+      const like = await request.delete('/unlike_article' + stringfyquery({ uid: this.props.userInfo.uid, article_id: videoDate.article_id }))
+      if (like.status == 200) {
+        this.setState({ videoDate: { ...videoDate, isunlike: false, unlikeNum: videoDate.unlikeNum - 1 } })
+      }
+    }
+  }
+  // 拉黑
+  black = async () => {
+    const res = await request.post('/black', { uid: this.props.userInfo.uid, aid: this.state.videoDate.uid })
+    if (res.status == 200) {
+      Alert.alert('拉黑用户成功')
+    } else {
+      Alert.alert('拉黑用户成功')
+    }
+  }
+
+  //举报文章
+  violation = async () => {
+    const res = await request.post('/violation_article', { uid: this.props.userInfo.uid, article_id: this.state.videoDate.article_id })
+    if (res.status == 200) {
+      Alert.alert('举报文章成功')
+    }
+  }
   render() {
-    const { videoMount, paused, videoDate, isEnd, startTime, endTime, progressBar, videoHeight, videoWidth, resizeMode } = this.state
+    const { commentNum, videoMount, paused, videoDate, isEnd, startTime, endTime, progressBar, videoHeight, videoWidth, resizeMode } = this.state
+
     return (
       <View style={{ opacity: videoMount ? 1 : 0, borderBottomWidth: 10, borderBottomColor: "#f2f2f2" }}>
         <View style={{ flexDirection: "row", position: "relative", justifyContent: "space-between", alignItems: "center", paddingLeft: 10, paddingRight: 10 }}>
           <TouchableOpacity style={{ marginTop: 10, marginBottom: 10, height: 40, flexDirection: "row", alignItems: "center" }}>
-            <Image source={require('../../res/QQIcon.webp')} style={{ width: 38, height: 38, borderRadius: 19, borderColor: '#e9e9e9', borderWidth: 1 }} />
-            <Text style={{ color: "#000", fontSize: 17, marginLeft: 15 }}>揽月</Text>
+            <Image source={{ uri: baseURL + videoDate.avatar }} style={{ width: 38, height: 38, borderRadius: 19, borderColor: '#e9e9e9', borderWidth: 1 }} />
+            <Text style={{ color: "#000", fontSize: 17, marginLeft: 15 }}>{videoDate.nickname}</Text>
           </TouchableOpacity>
           <View>
-            <Tooltip
-              overlayColor='rgba(0, 0, 0, 0.70)'
-              backgroundColor='#fff'
-              width={200}
-              skipAndroidStatusBar={true}
-              height={100}
-              popover={
-                <View style={{ flex: 1, width: "100%", justifyContent: 'space-around' }}>
-                  <Text style={{ fontFamily: 'iconfont', borderBottomColor: '#ccc', borderBottomWidth: 1, padding: 10, fontSize: 16, color: "#666" }}>{'\ue627'}  拉黑用户</Text>
-                  <Text style={{ fontFamily: 'iconfont', padding: 10, fontSize: 16, color: "#666" }}>{'\ue66b'}  举报内容</Text>
-                </View>
-              }
-            >
-              <Text style={{ fontFamily: "iconfont", fontSize: 18, marginRight: 5 }}>{'\ue65e'}</Text>
-            </Tooltip>
+            {
+              this.props.userInfo.uid != videoDate.uid ?
+                <Tooltip
+                  overlayColor='rgba(0, 0, 0, 0.70)'
+                  backgroundColor='#fff'
+                  width={200}
+                  skipAndroidStatusBar={true}
+                  height={100}
+                  popover={
+                    <View style={{ flex: 1, width: "100%", justifyContent: 'space-around' }}>
+                      <Text onPress={this.black} style={{ fontFamily: 'iconfont', borderBottomColor: '#ccc', borderBottomWidth: 1, padding: 10, fontSize: 16, color: "#666" }}>{'\ue627'}  拉黑用户</Text>
+                      <Text onPress={this.violation} style={{ fontFamily: 'iconfont', padding: 10, fontSize: 16, color: "#666" }}>{'\ue66b'}  举报内容</Text>
+                    </View>
+                  }
+                >
+                  <Text style={{ fontFamily: "iconfont", fontSize: 18, marginRight: 5 }}>{'\ue65e'}</Text>
+                </Tooltip> : <></>
+            }
           </View>
         </View>
 
         <TouchableOpacity activeOpacity={1} style={{ position: "relative", height: videoHeight, width: "100%", backgroundColor: "#000" }} onPress={this.showProgressBar}>
-          <Video source={videoDate.content}   // Can be a URL or a local file.
+          <Video source={{ uri: baseURL + videoDate.content[0] }}   // Can be a URL or a local file.
             ref={(ref) => {
               this.player = ref
             }}
@@ -141,7 +214,7 @@ export default class MyVideo extends Component<MyVideoProps, any>{
             // controls={true} // 显示默认进度条
             disableFocus={true} //禁止后台声音
             // repeat={true} //循环
-            muted={true}  //静音
+            muted={false}  //静音
             paused={paused} //暂停
             playInBackground={true}       // 当app转到后台运行的时候，播放是否暂停
             onEnd={this.onEnd}
@@ -199,22 +272,22 @@ export default class MyVideo extends Component<MyVideoProps, any>{
         <View style={{ flexDirection: "row" }}>
           <TouchableOpacity style={styles.videoType}>
             <Text style={{ fontSize: 18, color: "#f33" }}>#</Text>
-            <Text style={{ marginLeft: 5 }}>视频类型</Text>
+            <Text style={{ marginLeft: 5 }}>{videoDate.article_type}</Text>
           </TouchableOpacity>
           <View style={{ flex: 1 }}></View>
         </View>
         <View style={{ height: 50, flexDirection: "row", alignItems: "center", justifyContent: "space-around" }}>
-          <TouchableOpacity style={{ flexDirection: "row", alignItems: "center" }}>
-            <Text style={{ fontFamily: "iconfont", color: '#444', fontSize: 25 }}>{'\ue60f'}</Text>
-            <Text style={{ marginLeft: 6 }}>10</Text>
+          <TouchableOpacity activeOpacity={1} onPress={this.likeArticle} style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={{ fontFamily: "iconfont", color: videoDate.islike ? '#f00' : '#444', fontSize: 25 }}>{'\ue60f'}</Text>
+            <Text style={{ marginLeft: 6, color: videoDate.islike ? '#f00' : '#444' }}>{videoDate.likeNum}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: "row", alignItems: "center" }}>
-            <Text style={{ fontFamily: "iconfont", color: '#444', fontSize: 19 }}>{'\ue9a4'}</Text>
-            <Text style={{ marginLeft: 6 }}>10</Text>
+          <TouchableOpacity activeOpacity={1} onPress={this.unlikeArticle} style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={{ fontFamily: "iconfont", color: videoDate.isunlike ? '#f00' : '#444', fontSize: 19 }}>{'\ue9a4'}</Text>
+            <Text style={{ marginLeft: 6, color: videoDate.isunlike ? '#f00' : '#444' }}>{videoDate.unlikeNum}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={this.gotoVideoInfo} style={{ flexDirection: "row", alignItems: "center" }}>
             <Text style={{ fontFamily: "iconfont", color: '#444', fontSize: 21 }}>{'\ue60d'}</Text>
-            <Text style={{ marginLeft: 6 }}>10</Text>
+            <Text style={{ marginLeft: 6 }}>{commentNum}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={{ flexDirection: "row", alignItems: "center" }}>
             <Text style={{ fontFamily: "iconfont", color: '#444', fontSize: 23 }}>{'\ue8b0'}</Text>
@@ -225,6 +298,8 @@ export default class MyVideo extends Component<MyVideoProps, any>{
     )
   }
 }
+const MyVideo = connect(state => ({ userInfo: state.userInfo }))(Index)
+export default MyVideo
 var styles = StyleSheet.create({
   progressBar: {
     position: "absolute",

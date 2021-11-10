@@ -15,14 +15,28 @@ import CopyreaderScreen from '..//My/Copyreader';
 import IndividualityScreen from '..//My/Copyreader/Individuality';
 import ImageInfoScreen from '..//ImageInfo';
 import CardInfoScreen from '..//My/CardInfo';
+import TextInfoScreen from '../TextInfo'
 import DomoScreen from '../Demo';
 import { setNavigation } from '../../redux/actions/navigation';
+import { setUserInfo } from '../../redux/actions/userInfo';
 import {connect} from 'react-redux'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import request from '../../util/request';
+
 const Stack = createNativeStackNavigator();
 interface indexProps{
   setNavigation?:any
+  setUserInfo?:any
 }
 function index(props:indexProps) {
+  const init  = React.useCallback(async()=>{
+   const userInfostr:any =  await AsyncStorage.getItem('userInfo')
+   const userInfo = JSON.parse(userInfostr)
+   props.setUserInfo(userInfo)
+  },[])
+  React.useEffect(()=>{
+    init()
+  },[])
   return (
     <SafeAreaProvider>
       <NavigationContainer ref={ref=>props.setNavigation(ref)}>
@@ -39,11 +53,12 @@ function index(props:indexProps) {
           <Stack.Screen name="Individuality" component={IndividualityScreen} />
           <Stack.Screen name="ImageInfo" component={ImageInfoScreen} />
           <Stack.Screen name="CardInfo" component={CardInfoScreen} />
+          <Stack.Screen name="TextInfo" component={TextInfoScreen} />
           <Stack.Screen name="Demo" component={DomoScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
   )
 }
-const Nav = connect(state=>({}),{setNavigation})(index)
+const Nav = connect(state=>({}),{setNavigation,setUserInfo})(index)
 export default Nav

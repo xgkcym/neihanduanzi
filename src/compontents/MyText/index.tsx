@@ -3,21 +3,22 @@ import { Tooltip } from 'react-native-elements'
 import { Text, View, TouchableOpacity, Image, StyleSheet } from 'react-native'
 interface MyTextProps {
   TextDate?: any,
-  gotoTextInfo?: Function
+  gotoTextInfo?: Function,
 }
-let textArr:any[]
+let textInfo:any
 export default class MyText extends Component <MyTextProps>{
   constructor(props:any){
     super(props)
-    this.state.textArr = this.props.TextDate
+    this.state.textInfo = this.props.TextDate
   }
   state ={
-    textArr:textArr
+    textInfo:textInfo
   }
   gotoImageInfo = () => {
   }
   render() {
-    const {textArr} = this.state
+    const {textInfo} = this.state
+    
     return (
       <View style={{borderBottomWidth: 10, borderBottomColor: "#f2f2f2" }}>
         {/* 头像 */}
@@ -45,26 +46,26 @@ export default class MyText extends Component <MyTextProps>{
           </View>
         </View>
         {/*头像 结束 */}
-        <Text style={{paddingLeft:15,paddingRight:15,fontSize:17}}>1dsasasssadssdaaaaaaaaasadaaadddddddddddddddddddddddasdddddddddddddddddd</Text>
+        <Text style={{paddingLeft:15,paddingRight:15,fontSize:17}}>{textInfo.title}</Text>
         <View style={{ flexDirection: "row" }}>
           <TouchableOpacity style={styles.imageType}>
             <Text style={{ fontSize: 18, color: "#f33" }}>#</Text>
-            <Text style={{ marginLeft: 5 }}>文本类型</Text>
+            <Text style={{ marginLeft: 5 }}>{textInfo.article_type}</Text>
           </TouchableOpacity>
           <View style={{ flex: 1 }}></View>
         </View>
         <View style={{ height: 50, flexDirection: "row", alignItems: "center", justifyContent: "space-around" }}>
           <TouchableOpacity style={{ flexDirection: "row", alignItems: "center" }}>
             <Text style={{ fontFamily: "iconfont", color: '#444', fontSize: 25 }}>{'\ue60f'}</Text>
-            <Text style={{ marginLeft: 6 }}>10</Text>
+            <Text style={{ marginLeft: 6 }}>{textInfo.likeNum}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={{ flexDirection: "row", alignItems: "center" }}>
             <Text style={{ fontFamily: "iconfont", color: '#444', fontSize: 19 }}>{'\ue9a4'}</Text>
-            <Text style={{ marginLeft: 6 }}>10</Text>
+            <Text style={{ marginLeft: 6 }}>{textInfo.unlikeNum}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={()=>{if(this.props.gotoTextInfo)this.props.gotoTextInfo()}} style={{ flexDirection: "row", alignItems: "center" }}>
             <Text style={{ fontFamily: "iconfont", color: '#444', fontSize: 21 }}>{'\ue60d'}</Text>
-            <Text style={{ marginLeft: 6 }}>10</Text>
+            <Text style={{ marginLeft: 6 }}>{textInfo.comment.length}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={{ flexDirection: "row", alignItems: "center" }}>
             <Text style={{ fontFamily: "iconfont", color: '#444', fontSize: 23 }}>{'\ue8b0'}</Text>

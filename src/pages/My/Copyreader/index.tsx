@@ -17,6 +17,7 @@ import {connect} from 'react-redux'
 import { updataUserInfo } from '../../../redux/actions/userInfo';
 import request, { baseURL } from '../../../util/request';
 import axios from 'axios';
+import { Alert } from 'react-native';
  class index extends Component<any> {
   state = {
     nicknameValue: '',
@@ -31,22 +32,40 @@ import axios from 'axios';
       height: 400,
       cropping: true,
     })
-    const formdata = new FormData()   
-    formdata.append('avatar',image) 
+    const formdata = new FormData()  
+    const pathname = image.path.split('/') 
+    formdata.append('avatar',{
+      uri:image.path,
+      name:pathname[pathname.length-1],
+      type:image.mime
+    }) 
     let config = {
       headers:{
         'Content-Type':'multipart/form-data;'
       }
     }
-    // fetch('http://192.168.137.170:3000/moveApp/users/avatar',{method:"POST",headers:{"Content-Type":'application/x-www-urlencde'},body:formdata})   
-    // .then(data=>{
-    //   console.log(data);
-      
-    // }) 
-    // const res = await request.post('/users/avatar',formdata,config)
-    // console.log(res);
+    const res:any = await request.post('/users/avatar',formdata,config)
+    if(res.status == 200){
+      const resopnse = await request.put('/users',{uid:this.props.userInfo.uid,avatar:res.file.path})
+      if(resopnse.status == 200){
+         this.props.updataUserInfo({avatar:res.file.path})
+      }
+    }else{
+      Alert.alert('更新头像失败')
+    }
+    
     
   };
+  setNickname = async()=>{
+    const {nicknameValue} = this.state
+    const res = await request.put('/users',{nickname:nicknameValue,uid:this.props.userInfo.uid})
+    if(res.status == 200){
+      this.props.updataUserInfo({nicknae:nicknameValue})
+    }else{
+      Alert.alert('更新名字失败')
+    }
+    this.setState({ showNicknameView: false})
+  }
   setGener = () => {
     Picker.init({
       pickerData: ["男", '女'],
@@ -54,7 +73,14 @@ import axios from 'axios';
       pickerConfirmBtnText: '确定',
       pickerCancelBtnText: '取消',
       pickerTitleText: '选择性别',
-      onPickerConfirm: data => {
+      onPickerConfirm: async(data) => {
+        let gender = data[0] == '男'?'1':data[0] == '女'?'0':''
+        const res = await request.put('/users',{uid:this.props.userInfo.uid,gender})
+        if(res.status == 200){
+          this.props.updataUserInfo({gender})
+        }else{
+          Alert.alert('更新性别失败')
+        }
       }
     })
     Picker.show()
@@ -67,9 +93,16 @@ import axios from 'axios';
       pickerConfirmBtnText: '确定',
       pickerCancelBtnText: '取消',
       pickerTitleText: '选择城市',
-      onPickerConfirm: data => {
+      onPickerConfirm: async(data) => {
         // data =  [广东，广州，天河]
-
+        const city = data[1]
+        const res = await request.put('/users',{uid:this.props.userInfo.uid,city})
+        if(res.status == 200){
+          this.props.updataUserInfo({city})
+        }else{
+          Alert.alert('更新城市失败')
+        }
+        
       },
     });
     Picker.show();
@@ -81,7 +114,14 @@ import axios from 'axios';
       pickerConfirmBtnText: '确定',
       pickerCancelBtnText: '取消',
       pickerTitleText: '选择学历',
-      onPickerConfirm: data => {
+      onPickerConfirm: async(data) => {
+        const education = data[0]
+        const res = await request.put('/users',{uid:this.props.userInfo.uid,education})
+        if(res.status == 200){
+          this.props.updataUserInfo({education})
+        }else{
+          Alert.alert('更新学历失败')
+        }
       }
     })
     Picker.show()
@@ -94,12 +134,21 @@ import axios from 'axios';
       pickerConfirmBtnText: '确定',
       pickerCancelBtnText: '取消',
       pickerTitleText: '选择星座',
-      onPickerConfirm: data => {
+      onPickerConfirm: async(data) => {
+        const constellation = data[0]
+        const res = await request.put('/users',{uid:this.props.userInfo.uid,constellation})
+        if(res.status == 200){
+          this.props.updataUserInfo({constellation})
+        }else{
+          Alert.alert('更新星座失败')
+        }
       }
     })
     Picker.show()
   }
   render() {
+    console.log(this.props.userInfo);
+    
     const {  nicknameValue, showNicknameView ,birthday} = this.state;
     const date = new Date();
     const time = `${date.getFullYear()}-${
@@ -141,7 +190,7 @@ import axios from 'axios';
               alignItems: 'center',
             }}>
             <Text style={{ fontSize: 16, color: '#000' }}>昵称</Text>
-            <TouchableOpacity onPress={() => this.setState({ showNicknameView: true, nicknameValue: JSON.parse(JSON.stringify(userInfo)).nickname })}>
+            <TouchableOpacity onPress={() => this.setState({ showNicknameView: true, nicknameValue: JSON.parse(JSON.stringify(this.props.userInfo)).nickname })}>
               <Text style={{ fontSize: 16, color: '#999' }}>
                 {this.props.userInfo.nickname}
               </Text>
@@ -156,7 +205,7 @@ import axios from 'axios';
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text style={{ fontSize: 18 }}>修改昵称</Text></View>
               <TextInput placeholder='请输入您的昵称' onChangeText={v => this.setState({ nicknameValue: v })} value={nicknameValue} style={{ borderBottomWidth: 2, flex: 1, textAlign: 'center', borderBottomColor: '#ddd' }} />
               <View style={{ width: '100%', flexDirection: 'row', flex: 1, alignItems: "center", marginTop: 5, borderRadius: 4, backgroundColor: "#fff" }}>
-                <TouchableOpacity style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 10 }} onPress={() => this.setState({ showNicknameView: false, userInfo: { ...userInfo, nickname: nicknameValue } })}>
+                <TouchableOpacity  style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 10 }} onPress={this.setNickname}>
                   <Text>保存</Text>
                 </TouchableOpacity>
                 <Text>|</Text>
@@ -208,8 +257,14 @@ import axios from 'axios';
                   color:"#999"
                 },
               }}
-              onDateChange={(birthday: any) => {
-                this.setState({ birthday });
+              onDateChange={async(birthday: any) => {
+                // this.setState({ birthday });
+                const res = await request.put('/users',{uid:this.props.userInfo.uid,birthday})
+                if(res.status == 200){
+                  this.props.updataUserInfo({birthday})
+                }else{
+                  Alert.alert('更新生日失败')
+                }
               }}
             />
           </ListItem.Content>
@@ -285,6 +340,7 @@ import axios from 'axios';
             <Text style={{ fontSize: 16, color: '#000' }}>个性动态</Text>
           </ListItem.Content>
         </ListItem>
+        <Text style={{fontSize:16,color:'#666',padding:20}}>{this.props.userInfo.individuality}</Text>
         {/* 个性结束 */}
       </View>
     );

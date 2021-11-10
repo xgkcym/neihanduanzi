@@ -5,7 +5,13 @@ import GobackTitle from '../../../compontents/GobackTitle';
 import Emotion from '../../../compontents/Emotion';
 import VideoInfo from './VideoPicker';
 import MyVideo from '../../../compontents/MyVideo';
-export default class Publish extends Component {
+import { Alert } from 'react-native';
+import request from '../../../util/request';
+import Picker from 'react-native-picker';
+import { connect } from 'react-redux'
+let imageArr:any[]
+let  article_typeList:any[]
+class index extends Component<any> {
   state = {
     title: "",
     isShowEmoji: true,
@@ -13,25 +19,28 @@ export default class Publish extends Component {
     isShowVideo: false,
     imageArr: [],
     videoInfo: [],
-
+    article_type:'',
+    article_typeList:article_typeList
   }
 
-  
-  openImagePicker = () => {
+
+  openImagePicker = async () => {
     const { imageArr } = this.state
-    ImagePicker.openPicker({
+    const image = await ImagePicker.openPicker({
       width: 300,
       height: 400,
       cropping: true,
       multiple: true
-    }).then(image => {
-      let imagearr = [...imageArr, ...image]
-      if (imagearr.length >= 6) {
-        this.setState({ imageArr: imagearr.slice(0, 6) })
-      } else {
-        this.setState({ imageArr: imagearr })
-      }
-    });
+    })
+
+
+    let imagearr = [...imageArr, ...image]
+    if (imagearr.length >= 6) {
+      this.setState({ imageArr: imagearr.slice(0, 6) })
+    } else {
+      this.setState({ imageArr: imagearr })
+    }
+
   }
   openVideoPicker = () => {
     ImagePicker.openPicker({
@@ -53,15 +62,110 @@ export default class Publish extends Component {
     this.setState({ imageArr })
   }
 
+  setArticleType =async ()=>{
+    const {article_typeList}=this.state
+    Picker.init({
+      pickerData: article_typeList,
+      selectedValue: [article_typeList[0]],
+      pickerConfirmBtnText: '确定',
+      pickerCancelBtnText: '取消',
+      pickerTitleText: '选择文章类型',
+      onPickerConfirm: async(data) => {
+        this.setState({article_type:data[0]})
+      }
+    })
+    Picker.show()
+  }
+  async componentDidMount(){
+    const article_type:any[] = await request.get('/article_type')
+    let article_typeList: any[] = []
+    article_type.map((v:any)=>{
+      article_typeList.push(v.type)
+    })
+    
+    this.setState({article_typeList})
+    
+  }
+  publish = async () => {
+    const { imageArr, videoInfo, title,article_type } = this.state
+    let  imageList:any[]
+    imageList =imageArr
+    let  videoList:any[] =videoInfo
+    let content_type = 'text'
+    let res: any
+    let content = []
+    if(article_type == ''){
+      return Alert.alert('请选择论坛类型')
+    }
+    if (imageList.length > 0 && videoInfo.length > 0) {
+      return Alert.alert('图片和视频只能选一种')
+    }
+    if (imageList.length > 0) {
+      content_type = 'image'
+      for(let i=0;i<imageList.length;i++){
+      const pathname = imageList[i].path.split('/')
+        const formdata = new FormData()
+        formdata.append('content', {
+          uri: imageList[i].path,
+          name: pathname[pathname.length-1],
+          type: imageList[i].mime
+        })
+        let config = { headers: { 'Content-Type': 'multipart/form-data;' } }
+        const res: any = await request.post('/article/content', formdata, config)
+        if (res.status == 200) {
+          content.push(res.file.path)
+        } else {
+          return Alert.alert('图片加载失败')
+        }
+      }
+      res = await request.post('/article', { uid: this.props.userInfo.uid, title, content:content,article_type ,content_type})
+      console.log(res);
+      
+
+    }
+    if (videoList.length > 0) {
+      content_type = 'video'
+      let content:any[] = []
+      for(let i=0;i<videoList.length;i++){
+        const pathname = videoList[i].path.split('/')
+          const formdata = new FormData()
+          formdata.append('content', {
+            uri: videoList[i].path,
+            name: pathname[pathname.length-1],
+            type: videoList[i].mime
+          })
+          let config = { headers: { 'Content-Type': 'multipart/form-data;' } }
+          const res: any = await request.post('/article/content', formdata, config)
+          if (res.status == 200) {
+            content.push(res.file.path)
+          } else {
+            return Alert.alert('图片加载失败')
+          }
+        }
+      res = await request.post('/article', { uid: this.props.userInfo.uid, title, content,content_type,article_type })
+    }
+    if(imageList.length == 0 && videoInfo.length == 0){
+      res = await request.post('/article', { uid: this.props.userInfo.uid, title,content_type,article_type })
+    }
+    if(res.status == 200){
+      Alert.alert('发布论坛成功')
+      this.props.navigation.goBack()
+    }
+  }
+
   render() {
-    const { videoInfo, imageArr, title, isShowEmoji, isShowImage, isShowVideo } = this.state
+    const { videoInfo, imageArr, title, isShowEmoji, isShowImage, isShowVideo,article_type } = this.state
+    console.log(videoInfo);
+    
     return (
       <View style={{ flex: 1 }}>
         <GobackTitle
           title={'论坛'}
           props={this.props}
           rightText='发布'
-          rightTextStyle={{ fontSize: 16, width: 35 }} />
+          rightTextStyle={{ fontSize: 16, width: 35 }}
+          rightOnPress={this.publish}
+        />
         <TouchableOpacity
           onPress={() => this.publishInput?.focus()}
           activeOpacity={1}
@@ -77,6 +181,7 @@ export default class Publish extends Component {
             placeholder="请填写动态（140字以内）"
             style={{ paddingLeft: 10, paddingRight: 10 }}
           />
+          <Text onPress={this.setArticleType} style={{position:"absolute",bottom:10,right:20,height:60,lineHeight:60,color:'#666'}}>{!article_type?'选择论坛类型':`论坛类型:${article_type}`}</Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <View
@@ -183,8 +288,8 @@ export default class Publish extends Component {
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingBottom: 10, flex: 1 }}>
                 {videoInfo.length > 0 ?
-                  <View style={{flex:1,position:'relative'}}>
-                      <VideoInfo videoInfo={videoInfo[0]} onPressError={()=>this.setState({videoInfo:[]})}/>
+                  <View style={{ flex: 1, position: 'relative' }}>
+                    <VideoInfo videoInfo={videoInfo[0]} onPressError={() => this.setState({ videoInfo: [] })} />
                   </View> :
                   <TouchableOpacity
                     onPress={this.openVideoPicker}
@@ -218,3 +323,5 @@ export default class Publish extends Component {
     )
   }
 }
+const Publish = connect(state => ({ userInfo: state.userInfo }))(index)
+export default Publish

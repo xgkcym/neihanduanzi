@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { Text, View, Image, TouchableOpacity, StyleSheet } from 'react-native'
 import GobackTitle from '../../../compontents/GobackTitle'
-import request from '../../../util/request'
+import request,{baseURL} from '../../../util/request'
 import TabCard from './TabCard'
 import { connect } from 'react-redux'
 let userInfo: any
@@ -28,10 +28,10 @@ class index extends Component<any, any> {
     const { userInfo, attention, black, fans } = this.state
     return (
       <View style={{ flex: 1 }}>
-        <GobackTitle title='昵称' props={this.props} rightText={'\ue651'} rightTextStyle={{ fontFamily: "iconfont", fontSize: 18, textAlign: "right" }} />
+        <GobackTitle title={userInfo.nickname} props={this.props} rightText={'\ue651'} rightTextStyle={{ fontFamily: "iconfont", fontSize: 18, textAlign: "right" }} />
         <View style={{ height: 155, backgroundColor: "#fff", paddingLeft: 20, borderBottomColor: '#ccc', borderBottomWidth: 1 }}>
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", height: 90 }}>
-            <Image source={require('../../../res/avatar.webp')} style={{ width: 70, height: 70, borderRadius: 35 }} />
+            <Image source={{uri:baseURL+userInfo.avatar}} style={{ width: 70, height: 70, borderRadius: 35 }} />
             <View style={{ flex: 1, marginLeft: 20, marginRight: 10, marginBottom: 10 }}>
               <View style={{ flexDirection: "row", flex: 1, width: '100%' }}>
                 <TouchableOpacity style={styles.card} onPress={() => this.props.navigation.navigate('CardInfo', { CardType: 0 })}>
@@ -61,8 +61,8 @@ class index extends Component<any, any> {
               }
             </View>
           </View>
-          <Text style={{ height: 30, lineHeight: 30, fontSize: 13 }}>个性签名</Text>
-          <Text style={styles.city}>城市</Text>
+          <Text style={{ height: 30, lineHeight: 30, fontSize: 13 }}>{userInfo.individuality}</Text>
+          <Text style={styles.city}>{userInfo.city}</Text>
         </View>
         <View style={{ flex: 1 }}><TabCard /></View>
       </View>

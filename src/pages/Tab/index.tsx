@@ -7,7 +7,6 @@ import MessageScreen from '../Message'
 import MyScreen from '../My'
 import { setUserInfo } from '../../redux/actions/userInfo'
 import { connect } from 'react-redux'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import request from '../../util/request';
 const Tab = createBottomTabNavigator();
 interface MyTabsClassProps {
@@ -24,9 +23,7 @@ class MyTabsClass extends Component<MyTabsClassProps> {
   async componentDidMount() {
     const { params } = this.props.route
     params ? this.setState({ initialRouteName: params.initialRouteName }) : null
-    const Storage: any = await AsyncStorage.getItem('userInfo')
-    const userInfo = JSON.parse(Storage)
-    this.props.setUserInfo(userInfo)
+    
   }
   render() {
     const { initialRouteName } = this.state

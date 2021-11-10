@@ -7,17 +7,16 @@ import lastTime from '../../util/lastTime'
 import SvgUri from 'react-native-svg-uri';
 import svgXmlData from '../../util/svgXmlData'
 import GobackTitle from '../../compontents/GobackTitle';
-import ImageView from '../../compontents/MyImage/ImageView'
 import { baseURL } from '../../util/request';
-let imageDate: any
-export default class ImageInfo extends Component<any, any>{
+let textInfo: any
+export default class TextInfo extends Component<any, any>{
   constructor(prop: any) {
     super(prop)
-    this.state.imageDate = this.props.route.params.imageInfo
+    this.state.textInfo = this.props.route.params.TextDate
   }
   player: any
   state = {
-    imageDate:imageDate,
+    textInfo:textInfo,
     commentValue: '', //评论文本
     visible: false //二级评论
   }
@@ -27,22 +26,22 @@ export default class ImageInfo extends Component<any, any>{
   }
   render() {
     let commentArr = [1, 2, 3, 4, 5, 6, 7, 7, 8, 865, 7, 765, 657]
-    const { visible,imageDate } = this.state
+    const { visible,textInfo } = this.state
     return (
       <View style={{ flex: 1, position: "relative" ,backgroundColor:"#fff"}}>
         <GobackTitle title='校园论坛' props={this.props}/>
         {/* 昵称开始 */}
-        <ImageView imageArr={imageDate.content} />
+        <Text style={{paddingLeft:15,paddingRight:15,fontSize:17,marginTop:10,marginBottom:10}}>{textInfo.title}</Text>
         {
           !visible ?
             <View style={{ flex: 1 }}>
               <View style={{ paddingLeft: 15, paddingRight: 15 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 70 }}>
                   <TouchableOpacity style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Image source={{uri:baseURL+imageDate.avatar}} style={styles.avatar} />
+                    <Image source={{uri:baseURL+textInfo.avatar}} style={styles.avatar} />
                     <View style={{ marginLeft: 10 }}>
-                      <Text style={{ marginBottom: 3, fontSize: 16, fontWeight: '800' }}>{imageDate.nickname}</Text>
-                      <Text style={{ marginTop: 3, color: "#666" }}>{imageDate.create_time}</Text>
+                      <Text style={{ marginBottom: 3, fontSize: 16, fontWeight: '800' }}>{textInfo.nickname}</Text>
+                      <Text style={{ marginTop: 3, color: "#666" }}>{textInfo.create_time}</Text>
                     </View>
                   </TouchableOpacity>
                   <TouchableOpacity style={{ width: 55, height: 33, borderRadius: 8, justifyContent: 'center', alignItems: "center", backgroundColor: "#f55" }}>
@@ -77,7 +76,7 @@ export default class ImageInfo extends Component<any, any>{
                 {/* 评论开始 */}
                 <View style={{ marginLeft: 15, marginRight: 15 }}>
                   {
-                    imageDate.comment.map((v: any) => (
+                    textInfo.comment.map((v: any) => (
                       <TouchableOpacity activeOpacity={1} style={{ flexDirection: "row", marginTop: 20 }}>
                         <TouchableOpacity activeOpacity={1} onPress={() => this.gotoUserInfo()}>
                           <Image style={styles.avatar} source={require('../../res/avatar.webp')} />

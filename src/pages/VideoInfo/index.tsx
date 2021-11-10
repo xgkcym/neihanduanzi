@@ -4,18 +4,32 @@ import Video from 'react-native-video'
 import getStringTime from '../../util/getStringTime'
 import { windowHeight, windowWidth } from '../../util/style'
 import { Slider, Tooltip, Text as EText } from 'react-native-elements';
-import lastTime from '../../util/lastTime'
+import lastTime, { lastTimeStr } from '../../util/lastTime'
 import SvgUri from 'react-native-svg-uri';
 import svgXmlData from '../../util/svgXmlData'
+import request, { baseURL } from '../../util/request'
+import { connect } from 'react-redux'
+import { Alert } from 'react-native'
 let resizeMode: "stretch" | "contain" | "cover" | "none" | undefined;
 let videoDate: any
-export default class VideoInfo extends Component<any, any>{
+let comment2Date: any
+let comment2user: any = null
+class Index extends Component<any, any>{
   constructor(prop: any) {
     super(prop)
     this.state.videoDate = this.props.route.params.videoInfo
+    this.state.videoUrl = this.props.route.params.videoInfo.content[0]
   }
+  getArtilceInfo = async (article_id: any) => {
+    const res: any = await request.get(`/article?article_id=${article_id}`)
+    if (res.status == 200) {
+      this.setState({ videoDate: {...res.article[0]} })
+    }
+  }
+  commentinput: any
   player: any
   state = {
+    videoUrl:'',
     videoDate: videoDate,
     startTime: 0,
     endTime: 0,
@@ -23,17 +37,15 @@ export default class VideoInfo extends Component<any, any>{
     videoHeight: 0,
     videoWidth: 0,
     resizeMode: resizeMode,
-    paused: false,
+    paused: true,
     videoEnd: false,
     isEnd: false,
     videoMount: false,
     commentValue: '', //评论文本
-    visible: false //二级评论
-  }
-  componentDidMount() {
-    setTimeout(() => {
-      this.setState({ paused: true })
-    })
+    visible: false, //二级评论
+    comment2Date: comment2Date,
+    comment2placeholder: '',
+    comment2user: comment2user,//保存点击用户进行评论
   }
   //视频加载时
   onLoad = (event: any) => {
@@ -109,15 +121,73 @@ export default class VideoInfo extends Component<any, any>{
   gotoUserInfo = () => {
 
   }
+  // 关注
+  attention = async () => {
+    const res = await request.post('/attention', { uid: this.props.userInfo.uid, aid: this.state.videoDate.uid })
+    if (res.status == 200) {
+      Alert.alert('关注用户成功')
+    } else {
+      Alert.alert('已关注')
+    }
+  }
+
+  // 提交评论
+  postComment = async () => {
+    const { commentValue, videoDate, comment2placeholder, comment2user, visible, comment2Date } = this.state
+    if (visible) {
+      const res = await request.post('/comment2', { uid: this.props.userInfo.uid, aid: comment2Date.uid, article_id: videoDate.article_id, text: commentValue, comment_id: comment2Date.comment_id })
+      if (res.status == 200) {
+        Alert.alert('评论成功')
+      } else {
+        Alert.alert('评论失败')
+      }
+      this.commentinput.blur()
+      this.setState({ commentValue: "" })
+    } else {
+      if (comment2user) {
+        console.log(comment2user);
+        const res = await request.post('/comment2', { uid: this.props.userInfo.uid, aid: comment2user.uid, article_id: videoDate.article_id, text: commentValue, comment_id: comment2user.comment_id })
+        if (res.status == 200) {
+          Alert.alert('评论成功')
+        } else {
+          Alert.alert('评论失败')
+        }
+        this.commentinput.blur()
+        this.setState({ commentValue: "" })
+      } else {
+        if (commentValue.trim().length > 0) {
+          const res = await request.post('/comment', { uid: this.props.userInfo.uid, aid: videoDate.uid, article_id: videoDate.article_id, text: commentValue })
+          if (res.status == 200) {
+            Alert.alert('评论成功')
+          } else {
+            Alert.alert('评论失败')
+          }
+          this.commentinput.blur()
+          this.setState({ commentValue: "" })
+        }
+      }
+     
+    }
+
+    this.getArtilceInfo(videoDate.article_id)
+  }
+  // 获取二级评论
+  comment2data = (comment: any) => {
+    this.setState({ comment2Date: comment, visible: true })
+  }
+  postusercomment = (comment2user: any, comment2placeholder: any) => {
+    this.setState({ comment2user, comment2placeholder })
+    this.commentinput.focus()
+  }
+
   render() {
-    let commentArr = [1, 2, 3, 4, 5, 6, 7, 7, 8, 865, 7, 765, 657]
-    const { visible, videoMount, paused, videoDate, isEnd, startTime, endTime, progressBar, videoHeight, videoWidth, resizeMode } = this.state
+    const {commentValue, videoUrl,visible, videoMount, paused, videoDate, isEnd, startTime, endTime, progressBar, videoHeight, videoWidth, resizeMode, comment2Date, comment2placeholder } = this.state
     return (
-      <View style={{ opacity: videoMount ? 1 : 0, flex: 1, position: "relative" }}>
+      <View style={{ opacity: videoMount ? 1 : 0, flex: 1, position: "relative", backgroundColor: "#fff" }}>
         <Text onPress={() => this.props.navigation.goBack()} style={{ fontFamily: "iconfont", color: "#fff", position: "absolute", zIndex: 20, top: 20, left: 15, fontSize: 22, width: 30, height: 30 }}>{'\ue600'}</Text>
         {progressBar ? <Text style={{ fontFamily: "iconfont", color: "#fff", position: "absolute", zIndex: 20, top: 20, right: 10, fontSize: 22, width: 30, height: 30 }}>{'\ueb10'}</Text> : <></>}
         <TouchableOpacity activeOpacity={1} style={{ position: "relative", height: videoHeight, width: "100%", backgroundColor: "#000" }} onPress={this.showProgressBar}>
-          <Video source={videoDate.content}   // Can be a URL or a local file.
+          <Video source={{ uri: baseURL + videoUrl }}   // Can be a URL or a local file.
             ref={(ref) => {
               this.player = ref
             }}
@@ -187,15 +257,20 @@ export default class VideoInfo extends Component<any, any>{
               <View style={{ paddingLeft: 15, paddingRight: 15 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 70 }}>
                   <TouchableOpacity style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Image source={require('../../res/avatar.webp')} style={styles.avatar} />
+                    <Image source={{ uri: baseURL + videoDate.avatar }} style={styles.avatar} />
                     <View style={{ marginLeft: 10 }}>
-                      <Text style={{ marginBottom: 3, fontSize: 16, fontWeight: '800' }}>昵称</Text>
-                      <Text style={{ marginTop: 3, color: "#666" }}>{lastTime(new Date().getTime() - 1000 * 60 * 60 * 14)}</Text>
+                      <Text style={{ marginBottom: 3, fontSize: 16, fontWeight: '800' }}>{videoDate.nickname}</Text>
+                      <Text style={{ marginTop: 3, color: "#666" }}>{lastTimeStr(videoDate.create_time)}</Text>
                     </View>
                   </TouchableOpacity>
-                  <TouchableOpacity style={{ width: 55, height: 33, borderRadius: 8, justifyContent: 'center', alignItems: "center", backgroundColor: "#f55" }}>
-                    <Text style={{ color: "#fff", fontSize: 16 }}>关注</Text>
-                  </TouchableOpacity>
+                  {
+                    this.props.userInfo.uid != videoDate.uid ?
+                      <TouchableOpacity activeOpacity={1} onPress={this.attention} style={{ width: 55, height: 33, borderRadius: 8, justifyContent: 'center', alignItems: "center", backgroundColor: "#f55" }}>
+                        <Text style={{ color: "#fff", fontSize: 16 }}>关注</Text>
+                      </TouchableOpacity> : <TouchableOpacity activeOpacity={1} style={{ width: 55, height: 33, borderRadius: 8, justifyContent: 'center', alignItems: "center", backgroundColor: "#3366FF" }}>
+                        <Text style={{ color: "#fff", fontSize: 16 }}>作者</Text>
+                      </TouchableOpacity>
+                  }
                 </View>
 
               </View>
@@ -204,7 +279,7 @@ export default class VideoInfo extends Component<any, any>{
                   <View style={{ flexDirection: "row" }}>
                     <TouchableOpacity style={styles.videoType}>
                       <Text style={{ fontSize: 18, color: "#f33" }}>#</Text>
-                      <Text style={{ marginLeft: 5 }}>视频类型</Text>
+                      <Text style={{ marginLeft: 5 }}>{videoDate.article_type}</Text>
                     </TouchableOpacity>
                     <View style={{ flex: 1 }}></View>
                   </View>
@@ -225,45 +300,44 @@ export default class VideoInfo extends Component<any, any>{
                 {/* 评论开始 */}
                 <View style={{ marginLeft: 15, marginRight: 15 }}>
                   {
-                    commentArr.map((v: any) => (
-                      <TouchableOpacity activeOpacity={1} style={{ flexDirection: "row", marginTop: 20 }}>
+                    videoDate.comment.map((v: any) => (
+                      <TouchableOpacity activeOpacity={1} key={v.comment_id} style={{ flexDirection: "row", marginTop: 20 }}>
                         <TouchableOpacity activeOpacity={1} onPress={() => this.gotoUserInfo()}>
-                          <Image style={styles.avatar} source={require('../../res/avatar.webp')} />
+                          <Image style={styles.avatar} source={{ uri: baseURL + v.avatar }} />
                         </TouchableOpacity>
-                        <View style={{ marginLeft: 10, flex: 1 }}>
+                        <TouchableOpacity onPress={() => this.postusercomment({ uid: v.uid, nickname: v.nickname, comment_id: v.comment_id }, `评论${v.nickname}用户`)} style={{ marginLeft: 10, flex: 1 }}>
                           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'space-between' }}>
                             <TouchableOpacity style={{ flexDirection: 'row', alignItems: "center" }}>
-                              <Text style={{ marginRight: 10, fontSize: 15 }}>昵称</Text>
-                              <Text style={{ color: "#666" }}>{lastTime(new Date().getTime() - 1000 * 60 * 60 * 1)}</Text>
+                              <Text style={{ marginRight: 10, fontSize: 15 }}>{v.nickname}</Text>
+                              <Text style={{ color: "#666" }}>{lastTimeStr(v.create_time)}</Text>
                             </TouchableOpacity>
                             <View style={{ flexDirection: "row", alignItems: 'center' }}>
                               <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                                <Text style={{ marginRight: 2 }} >6565</Text>
+                                <Text style={{ marginRight: 2 }} >{v.likeNum}</Text>
                                 <Text style={{ fontFamily: 'iconfont', fontSize: 16 }}>{'\ue60f'}</Text>
                               </TouchableOpacity>
                               <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                                <Text style={{ marginRight: 2 }} >23</Text>
+                                <Text style={{ marginRight: 2 }} >{v.unlikeNum}</Text>
                                 <Text style={{ fontFamily: 'iconfont' }}>{'\ue9a4'}</Text>
                               </TouchableOpacity>
                             </View>
                           </View>
                           <Text style={{ fontSize: 16, marginTop: 5 }}>
-                            sadddddddddddddddddddddddddddddddddddddddddddddddddddddddqweqwdqwfasfdddddddddddddd
+                            {v.text}
                           </Text>
                           <View style={{ flexDirection: 'row', marginBottom: 10, marginTop: 10 }}>
-                            {/* <TouchableOpacity style={{ paddingLeft: 7, paddingRight: 7, height: 24, justifyContent: "center", alignItems: 'center', backgroundColor: "#ddd", borderRadius: 12 }}>
+                            {v.comment.length == 0 ? <TouchableOpacity style={{ paddingLeft: 7, paddingRight: 7, height: 24, justifyContent: "center", alignItems: 'center', backgroundColor: "#ddd", borderRadius: 12 }}>
                               <Text>回复</Text>
-                            </TouchableOpacity> */}
-                            <TouchableOpacity style={{ paddingLeft: 7, paddingRight: 7, height: 24, justifyContent: "center", alignItems: 'center', backgroundColor: "#ddd", borderRadius: 12 }}>
-                              <Text onPress={() => this.setState({ visible: true })} style={{ fontFamily: "iconfont", fontSize: 12 }}>14条回复{'\ue65f'}</Text>
-                            </TouchableOpacity>
+                            </TouchableOpacity> : <TouchableOpacity activeOpacity={1} onPress={() => this.comment2data(v)} style={{ paddingLeft: 7, paddingRight: 7, height: 24, justifyContent: "center", alignItems: 'center', backgroundColor: "#ddd", borderRadius: 12 }}>
+                              <Text style={{ fontFamily: "iconfont", fontSize: 12 }}>{v.comment.length}条回复{'\ue65f'}</Text>
+                            </TouchableOpacity>}
                             <View style={{ flex: 1 }}></View>
                           </View>
-                        </View>
+                        </TouchableOpacity>
                       </TouchableOpacity>
                     ))
                   }
-                   <Text style={{fontSize:17,alignSelf:'center',color:"#666",marginTop:20,marginBottom:10}}>没有更多内容啦~</Text>
+                  <Text style={{ fontSize: 17, alignSelf: 'center', color: "#666", marginTop: 20, marginBottom: 10 }}>没有更多内容啦~</Text>
                 </View>
               </ScrollView>
             </View> :
@@ -271,70 +345,64 @@ export default class VideoInfo extends Component<any, any>{
               <View style={{ flexDirection: 'row', backgroundColor: '#fff', height: 49, alignItems: 'center', justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#ddd" }}>
                 <Text style={{ width: 30 }}></Text>
                 <Text style={{ fontSize: 18 }}>评论详情</Text>
-                <Text onPress={()=>this.setState({visible:false})} style={{ fontFamily: "iconfont", width: 30, fontSize: 24 }}>{'\ue8e7'}</Text>
+                <Text onPress={() => this.setState({ visible: false })} style={{ fontFamily: "iconfont", width: 30, fontSize: 24 }}>{'\ue8e7'}</Text>
               </View>
               <ScrollView style={{ flex: 1, backgroundColor: "#f2f2f2" }}>
                 <TouchableOpacity activeOpacity={1} style={{ paddingLeft: 15, paddingRight: 15, flexDirection: "row", paddingTop: 20, paddingBottom: 20, backgroundColor: "#fff" }}>
                   <TouchableOpacity activeOpacity={1} onPress={() => this.gotoUserInfo()}>
-                    <Image style={styles.avatar} source={require('../../res/avatar.webp')} />
+                    <Image style={styles.avatar} source={{ uri: baseURL + comment2Date.avatar }} />
                   </TouchableOpacity>
                   <View style={{ marginLeft: 10, flex: 1 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'space-between' }}>
                       <TouchableOpacity style={{ flexDirection: 'row', alignItems: "center" }}>
-                        <Text style={{ marginRight: 10, fontSize: 15 }}>昵称</Text>
+                        <Text style={{ marginRight: 10, fontSize: 15 }}>{comment2Date.nickname}</Text>
                         <Text style={{ color: "#666" }}>{lastTime(new Date().getTime() - 1000 * 60 * 60 * 1)}</Text>
                       </TouchableOpacity>
                       <View style={{ flexDirection: "row", alignItems: 'center' }}>
                         <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                          <Text style={{ marginRight: 2 }} >6565</Text>
+                          <Text style={{ marginRight: 2 }} >{comment2Date.likeNum}</Text>
                           <Text style={{ fontFamily: 'iconfont', fontSize: 16 }}>{'\ue60f'}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                          <Text style={{ marginRight: 2 }} >23</Text>
+                          <Text style={{ marginRight: 2 }} >{comment2Date.unlikeNum}</Text>
                           <Text style={{ fontFamily: 'iconfont' }}>{'\ue9a4'}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
                     <Text style={{ fontSize: 16, marginTop: 5 }}>
-                      sadddddddddddddddddddddddddddddddddddddddddddddddddddddddqweqwdqwfasfdddddddddddddd
+                      {comment2Date.text}
                     </Text>
-                    {/* <View style={{ flexDirection: 'row', marginBottom: 10, marginTop: 10 }}>
-                      <TouchableOpacity style={{ paddingLeft: 7, paddingRight: 7, height: 24, justifyContent: "center", alignItems: 'center', backgroundColor: "#ddd", borderRadius: 12 }}>
-                        <Text>回复</Text>
-                      </TouchableOpacity>
 
-                      <View style={{ flex: 1 }}></View>
-                    </View> */}
                   </View>
                 </TouchableOpacity>
                 {/* 二级评论开始 */}
                 <View style={{ flex: 1, paddingLeft: 20, paddingRight: 20 }}>
-                  <Text style={{ height: 50, lineHeight: 50, fontSize: 17, fontWeight: '800', color: "#000" }}>3条评论</Text>
+                  <Text style={{ height: 50, lineHeight: 50, fontSize: 17, fontWeight: '800', color: "#000" }}>{comment2Date.comment.length}条评论</Text>
                   {
-                    [1, 2, 3].map((v: any) => (
-                      <TouchableOpacity activeOpacity={1} style={{ flexDirection: "row", marginBottom: 30 }}>
-                        <TouchableOpacity activeOpacity={1} onPress={() => this.gotoUserInfo()}>
-                          <Image style={styles.avatar} source={require('../../res/avatar.webp')} />
+                    comment2Date.comment.map((v: any) => (
+                      <TouchableOpacity activeOpacity={1} key={v.comment2_id} style={{ flexDirection: "row", marginBottom: 30 }}>
+                        <TouchableOpacity  activeOpacity={1} onPress={() => this.gotoUserInfo()}>
+                          <Image style={styles.avatar} source={{ uri: baseURL + v.avatar }} />
                         </TouchableOpacity>
-                        <View style={{ marginLeft: 10, flex: 1 }}>
+                        <TouchableOpacity onPress={()=>this.postusercomment({ uid: v.uid, nickname: v.nickname, comment_id: v.comment_id }, `评论${v.nickname}用户`)} style={{ marginLeft: 10, flex: 1 }}>
                           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'space-between' }}>
                             <TouchableOpacity style={{ flexDirection: 'row', alignItems: "center" }}>
-                              <Text style={{ marginRight: 10, fontSize: 15 }}>昵称</Text>
+                              <Text style={{ marginRight: 10, fontSize: 15 }}>{v.nickname}</Text>
                               <Text style={{ color: "#666" }}>{lastTime(new Date().getTime() - 1000 * 60 * 60 * 1)}</Text>
                             </TouchableOpacity>
                             <View style={{ flexDirection: "row", alignItems: 'center' }}>
                               <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                                <Text style={{ marginRight: 2 }} >6565</Text>
+                                <Text style={{ marginRight: 2 }} >{v.likeNum}</Text>
                                 <Text style={{ fontFamily: 'iconfont', fontSize: 16 }}>{'\ue60f'}</Text>
                               </TouchableOpacity>
                               <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                                <Text style={{ marginRight: 2 }} >23</Text>
+                                <Text style={{ marginRight: 2 }} >{v.unlikeNum}</Text>
                                 <Text style={{ fontFamily: 'iconfont' }}>{'\ue9a4'}</Text>
                               </TouchableOpacity>
                             </View>
                           </View>
                           <Text style={{ fontSize: 16, marginTop: 5 }}>
-                            sadddddddddddddddddddddddddddddddddddddddddddddddddddddddqweqwdqwfasfdddddddddddddd
+                            {v.text}
                           </Text>
                           <View style={{ flexDirection: 'row', marginBottom: 10, marginTop: 10 }}>
                             <TouchableOpacity style={{ paddingLeft: 7, paddingRight: 7, height: 24, justifyContent: "center", alignItems: 'center', backgroundColor: "#ddd", borderRadius: 12 }}>
@@ -343,11 +411,11 @@ export default class VideoInfo extends Component<any, any>{
 
                             <View style={{ flex: 1 }}></View>
                           </View>
-                        </View>
+                        </TouchableOpacity>
                       </TouchableOpacity>
                     ))
                   }
-                  <Text style={{fontSize:17,color:"#666",marginBottom:10,alignSelf:"center"}}>没有更多内容啦~</Text>
+                  <Text style={{ fontSize: 17, color: "#666", marginBottom: 10, alignSelf: "center" }}>没有更多内容啦~</Text>
                 </View>
                 {/* 二级评论结束 */}
               </ScrollView>
@@ -358,10 +426,14 @@ export default class VideoInfo extends Component<any, any>{
         {/* 底部评论输入框开始 */}
         <View style={styles.InputBox}>
           <TextInput
+            ref={ref => this.commentinput = ref}
+            onBlur={() => this.setState({ comment2placeholder: '', comment2user: null })}
+            placeholder={comment2placeholder ? comment2placeholder : ''}
+            value={commentValue}
             onChangeText={(value: any) => this.setState({ commentValue: value })}
             style={{ borderWidth: 2, borderColor: "#ccc", paddingLeft: 15, fontSize: 12, flex: 1, height: 36, borderRadius: 18 }}
           />
-          <TouchableOpacity activeOpacity={1} style={{ justifyContent: "center", alignItems: "center", width: 60, height: '100%' }}>
+          <TouchableOpacity activeOpacity={1} onPress={this.postComment} style={{ justifyContent: "center", alignItems: "center", width: 60, height: '100%' }}>
             <Text>评论</Text>
           </TouchableOpacity>
         </View>
@@ -370,6 +442,8 @@ export default class VideoInfo extends Component<any, any>{
     )
   }
 }
+const VideoInfo = connect(state => ({ userInfo: state.userInfo }), {})(Index)
+export default VideoInfo
 var styles = StyleSheet.create({
   progressBar: {
     position: "absolute",

@@ -3,7 +3,7 @@ import { Text, View, Image, StatusBar, TouchableOpacity, StyleSheet, ScrollView,
 import { setUserInfo } from '../../redux/actions/userInfo'
 import { connect } from 'react-redux'
 import { UserType } from '../../util/usesType'
-import request from '../../util/request'
+import request,{baseURL} from '../../util/request'
 let userInfo: UserType | undefined
 interface indexProps {
   navigation?: any,
@@ -34,7 +34,7 @@ class index extends Component<indexProps> {
       <ScrollView>
         <StatusBar backgroundColor='transparent' barStyle={'dark-content'} />
         <View style={{ height: 100, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff" }}>
-          {this.props.userInfo?.uid ? <><Image source={require('../../res/avatar.webp')} style={{ width: 60, height: 60, borderRadius: 30, marginLeft: 20 }} />
+          {this.props.userInfo?.uid ? <><Image source={{uri:baseURL+this.props.userInfo?.avatar}} style={{ width: 60, height: 60, borderRadius: 30, marginLeft: 20 }} />
             <View style={{ marginLeft: 15, flex: 1 }}>
               <Text style={{ marginBottom: 5, fontSize: 17 }}>{this.props.userInfo?.nickname}</Text>
               <Text style={{ marginTop: 5, color: "#666" }}>{this.props.userInfo?.individuality}</Text>
