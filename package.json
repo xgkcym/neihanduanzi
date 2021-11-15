@@ -20,6 +20,7 @@
     "jmessage-react-plugin": "^3.2.0",
     "react": "16.13.1",
     "react-native": "0.63.2",
+    "react-native-awesome-alerts": "^1.5.2",
     "react-native-check-box": "^2.1.7",
     "react-native-datepicker": "1.7.2",
     "react-native-elements": "3.3.0",

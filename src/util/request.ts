@@ -1,7 +1,8 @@
 import axios, { AxiosInstance,AxiosRequestConfig } from "axios";
 import store from "../redux/store";
-// export const baseURL = 'http://192.168.137.170:3000'
-export const baseURL = 'http://192.168.137.151:3000'
+// export const baseURL = 'http://192.168.137.170:3000'  //黑鬼
+export const baseURL = 'http://192.168.155.193:3000' //小米
+// export const baseURL = 'http://192.168.137.151:3000'
 // export const baseURL = 'http://192.168.43.137:3000'
 
 const request: AxiosInstance = axios.create({

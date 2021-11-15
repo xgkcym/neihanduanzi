@@ -9,10 +9,14 @@ import {
   Platform,
   Text,
 } from 'react-native'
-import JMessage  from '../../../util/JMessage'
+import JMessage from '../../../util/JMessage'
 var RNFS = require('react-native-fs')
 
 import IMUI from 'aurora-imui-react-native'
+import request, { baseURL } from '../../../util/request'
+import stringfyquery from '../../../util/stringfyquery'
+import { connect } from 'react-redux'
+import { lastTimeStr } from '../../../util/lastTime'
 var InputView = IMUI.ChatInput
 var MessageListView = IMUI.MessageList
 const AuroraIController = IMUI.AuroraIMUIController
@@ -23,7 +27,7 @@ var themsgid = 1
 
 function constructNormalMessage() {
 
-  var message:any = {}
+  var message: any = {}
   message.msgId = themsgid.toString()
   themsgid += 1
   message.status = "send_succeed"
@@ -44,8 +48,8 @@ function constructNormalMessage() {
 
 var imageUrlArray = [
 ]
-
-export default class TestRNIMUI extends Component {
+let userInfo: any
+class Index extends Component<any> {
   onTapMessageCell: any
   constructor(props) {
     super(props);
@@ -61,15 +65,19 @@ export default class TestRNIMUI extends Component {
       inputViewLayout: { width: window.width, height: initHeight, },
       isAllowPullToRefresh: true,
       navigationBar: {},
+
     }
-    
+
 
     this.updateLayout = this.updateLayout.bind(this);
     this.onMsgClick = this.onMsgClick.bind(this);
     this.messageListDidLoadEvent = this.messageListDidLoadEvent.bind(this);
   }
-
-  componentDidMount() {
+  state = {
+    userInfo: userInfo,
+    messageListLayout: null
+  }
+  async componentDidMount() {
     /**
      * Android only
      * Must set menu height once, the height should be equals with the soft keyboard height so that the widget won't flash.
@@ -79,49 +87,59 @@ export default class TestRNIMUI extends Component {
       this.refs["ChatInput"].setMenuContainerHeight(316)
     }
     this.resetMenu()
+    const res: any = await request.get('/users' + stringfyquery({ uid: this.props.route.params.uid }))
+    if (res.status == 200) {
+      this.setState({ userInfo: res.data[0] })
+    }
     AuroraIController.addMessageListDidLoadListener(this.messageListDidLoadEvent);
+
   }
 
   messageListDidLoadEvent() {
     this.getHistoryMessage()
   }
-  
- async getHistoryMessage() {
-    var messages:any = []
-   /* const type = 'single'
-    const username = this.props.route.params.id
-    const limit = 100;
-    const res =  await JMessage.getHistoryMessages(type,username,limit)
+  lasttime = ''
+  async getHistoryMessage() {
+    var messages: any = []
+    /* const type = 'single'
+     const username = this.props.route.params.id
+     const limit = 100;
+     const res =  await JMessage.getHistoryMessages(type,username,limit)
+     console.log(res);
+     
+     */
+    const { userInfo } = this.state
+    const res: any = await JMessage.getHistoryMessages(userInfo.uid, 100)
     console.log(res);
-    res.map(v=>{
+    res.map((v: any) => {
       var message = constructNormalMessage()
-      if(v.from.username == this.props.RootStore.userInfo.id){
+      if (v.from.username == this.props.userInfo.uid) {
         message.isOutgoing = true
-        message.fromUser.avatarPath = "https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1534926548887&di=f107f4f8bd50fada6c5770ef27535277&imgtype=0&src=http%3A%2F%2Fpic.58pic.com%2F58pic%2F11%2F67%2F23%2F69i58PICP37.jpg"//1
-      }else{
+        message.fromUser.avatarPath = baseURL + this.props.userInfo.avatar//1
+      } else {
         message.isOutgoing = false
-        message.fromUser.avatarPath = "https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1534926548887&di=f107f4f8bd50fada6c5770ef27535277&imgtype=0&src=http%3A%2F%2Fpic.58pic.com%2F58pic%2F11%2F67%2F23%2F69i58PICP37.jpg"//1
-        
+        message.fromUser.avatarPath = baseURL + userInfo.avatar//1
       }
-      if(v.type == 'text'){
+      if (v.type == 'text') {
         message.msgType = 'text'
         message.text = v.text
-      }else if(v.type == 'image'){
+      } else if (v.type == 'image') {
         message.msgType = 'image'
         message.mediaPath = v.thumbPath
       }
-      
+
       // 图片路劲
       // message.mediaPath = imageUrlArray[index]
       message.contentSize = { 'height': 100, 'width': 200 }
-      message.timeString = (new Date(v.createTime)).toLocaleTimeString()
-    
+      if (lastTimeStr(v.createTime) != this.lasttime) {
+        message.timeString = lastTimeStr(v.createTime)
+      }
+      this.lasttime = lastTimeStr(v.createTime)
       // message.extras = { "extras": "fdfsf" }
       messages.push(message)
       // AuroraIController.appendMessages([message])
       // AuroraIController.scrollToBottom(true)
     })
-    */
     AuroraIController.appendMessages(messages)
     AuroraIController.scrollToBottom(true)
 
@@ -235,7 +253,7 @@ export default class TestRNIMUI extends Component {
     console.log("on pull to refresh")
     var messages = []
     for (var i = 0; i < 14; i++) {
-      var message:any = constructNormalMessage()
+      var message: any = constructNormalMessage()
       // if (index%2 == 0) {
       message.msgType = "text"
       message.text = "" + i
@@ -256,13 +274,20 @@ export default class TestRNIMUI extends Component {
 
   }
 
-  onSendText = (text) => {
+  onSendText = async (text: any) => {
+    const { userInfo } = this.state
     var message = constructNormalMessage()
     // var evenmessage = constructNormalMessage()
 
     message.msgType = 'text'
     message.text = text
+    message.fromUser.avatarPath = baseURL + this.props.userInfo.avatar
+    if (lastTimeStr((new Date()).getTime()) != this.lasttime) {
+      message.timeString = lastTimeStr((new Date()).getTime())
+    }
+    this.lasttime = lastTimeStr((new Date()).getTime())
     // await JMessage.sendTextMessage('single',this.props.route.params.id,text,{user:JSON.stringify({...this.props.RootStore.userInfo,type:'chat'})})
+    await JMessage.sendTextMessage(userInfo.uid, text, { userInfo: JSON.stringify({ ...this.props.userInfo, type: "chat" }) })
     AuroraIController.appendMessages([message])
   }
 
@@ -281,7 +306,7 @@ export default class TestRNIMUI extends Component {
   }
 
   onFinishRecordVoice = (mediaPath, duration) => {
-    var message:any = constructNormalMessage()
+    var message: any = constructNormalMessage()
     message.msgType = "voice"
     message.mediaPath = mediaPath
     message.timeString = "safsdfa"
@@ -307,7 +332,7 @@ export default class TestRNIMUI extends Component {
     // AuroraIController.appendMessages([message])
   }
 
-  onSendGalleryFiles = (mediaFiles) => {
+  onSendGalleryFiles = (mediaFiles: any[]) => {
     /**
      * WARN: This callback will return original image, 
      * if insert it directly will high memory usage and blocking UI。
@@ -320,8 +345,8 @@ export default class TestRNIMUI extends Component {
      * 代码用例不做裁剪操作。
      */
     // Alert.alert('fas', JSON.stringify(mediaFiles))
-    console.log(mediaFiles);
-    mediaFiles.map(async(v)=>{
+    const { userInfo } = this.state
+    mediaFiles.map(async (v: any) => {
       var message = constructNormalMessage()
       if (v.mediaType == "image") {
         message.msgType = "image"
@@ -329,18 +354,22 @@ export default class TestRNIMUI extends Component {
         message.msgType = "video"
         message.duration = v.duration
       }
-
       message.mediaPath = v.mediaPath
       // message.timeString = "8:00"
       // 发送中
+      message.fromUser.avatarPath = baseURL + this.props.userInfo.avatar
+      if (lastTimeStr((new Date()).getTime()) != this.lasttime) {
+        message.timeString = lastTimeStr((new Date()).getTime())
+      }
+      this.lasttime = lastTimeStr((new Date()).getTime())
       message.status = "send_going"
       AuroraIController.appendMessages([message])
       AuroraIController.scrollToBottom(true)
 
-    //   await JMessage.sendImageMessage('single',this.props.route.params.id,v.mediaPath,{user:JSON.stringify({...this.props.RootStore.userInfo,type:'chat'})})
-
-    //   // 发送完毕
-      AuroraIController.updateMessage({...message,status:'send_succeed'})
+      //   await JMessage.sendImageMessage('single',this.props.route.params.id,v.mediaPath,{user:JSON.stringify({...this.props.RootStore.userInfo,type:'chat'})})
+      await JMessage.sendImageMessage(userInfo.uid, v.mediaPath, { userInfo: JSON.stringify({ ...this.props.userInfo, type: "chat" }) })
+      //   // 发送完毕
+      AuroraIController.updateMessage({ ...message, status: 'send_succeed' })
 
     })
 
@@ -400,22 +429,23 @@ export default class TestRNIMUI extends Component {
         inputViewLayout: { flex: 1, width: window.width, height: window.height },
         navigationBar: { height: 0 }
       })
-    } 
+    }
   }
 
   render() {
+    const { userInfo } = this.state
     return (
       <View style={styles.container}>
-        <View style={{zIndex:100,width:"100%",backgroundColor:"#fff",height:64,flexDirection:"row",justifyContent:"space-between",alignItems:'center',paddingLeft:15,paddingRight:15}}
+        <View style={{ zIndex: 100, width: "100%", backgroundColor: "#fff", height: 64, flexDirection: "row", justifyContent: "space-between", alignItems: 'center', paddingLeft: 15, paddingRight: 15 }}
           ref="NavigatorView">
-            <Text onPress={()=>this.props.navigation.goBack()
-            } style={{fontFamily:"iconfont",width:30,fontSize:18}}>{'\ue600'}</Text>
+          <Text onPress={() => this.props.navigation.goBack()
+          } style={{ fontFamily: "iconfont", width: 30, fontSize: 18 }}>{'\ue600'}</Text>
           <View
             style={styles.sendCustomBtn}
             // title=''
             onPress={() => {
               if (Platform.OS === 'ios') {
-                var message:any = constructNormalMessage()
+                var message: any = constructNormalMessage()
                 message.msgType = 'custom'
                 message.content = `
                 <h5>This is a custom message. </h5>
@@ -450,9 +480,9 @@ export default class TestRNIMUI extends Component {
                 AuroraIController.appendMessages([message]);
               }
             }}>
-              <Text style={{fontSize:17}}>昵称</Text>
+            <Text style={{ fontSize: 17 }}>{userInfo ? userInfo.nickname : '未登录'}</Text>
           </View>
-          <Text style={{width:30,fontFamily:"iconfont",textAlign:"right",fontSize:20}}>{'\ueb10'}</Text>
+          <Text style={{ width: 30, fontFamily: "iconfont", textAlign: "right", fontSize: 20 }}>{'\ueb10'}</Text>
         </View>
         <MessageListView style={this.state.messageListLayout}
           ref="MessageList"
@@ -508,17 +538,18 @@ export default class TestRNIMUI extends Component {
           customLayoutItems={{
             left: [],
             right: ['send'],
-            bottom: ['voice','gallery','emoji','camera']
+            bottom: ['voice', 'gallery', 'emoji', 'camera']
           }}
         />
       </View>
     );
   }
 }
-
+const TestRNIMUI = connect(state => ({ userInfo: state.userInfo }), {})(Index)
+export default TestRNIMUI
 const styles = StyleSheet.create({
   sendCustomBtn: {
-      
+
   },
   container: {
     flex: 1,

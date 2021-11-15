@@ -8,11 +8,14 @@ import request, { baseURL } from '../../util/request'
 import { connect } from 'react-redux'
 import stringfyquery from '../../util/stringfyquery'
 import { Alert } from 'react-native'
+import AwesomeAlert from 'react-native-awesome-alerts'
 let resizeMode: "stretch" | "contain" | "cover" | "none" | undefined;
 interface MyVideoProps {
   VideoDate?: any,
   gotoVideoInfo?: Function,
-  userInfo?: any
+  userInfo?: any,
+  deleteArticle? :Function,
+  gotoUserDetail?:Function
 }
 let videoDate: any
 class Index extends Component<MyVideoProps, any>{
@@ -22,9 +25,15 @@ class Index extends Component<MyVideoProps, any>{
     this.state.videoDate = VideoDate
     let commentNum = VideoDate.comment.length
     for (let i = 0; i < VideoDate.comment.length; i++) {
-      commentNum+=VideoDate.comment[i].comment.length
+      commentNum += VideoDate.comment[i].comment.length
     }
     this.state.commentNum = commentNum
+  }
+  getArtilceInfo = async (article_id: any) => {
+    const res: any = await request.get(`/article?article_id=${article_id}`)
+    if (res.status == 200) {
+      this.setState({ videoDate: { ...res.article[0] } })
+    }
   }
   player: any
   state = {
@@ -39,7 +48,8 @@ class Index extends Component<MyVideoProps, any>{
     videoEnd: false,
     isEnd: false,
     videoMount: false,
-    commentNum: 0
+    commentNum: 0,
+    showAlert:false
   }
   componentDidMount() {
 
@@ -118,43 +128,24 @@ class Index extends Component<MyVideoProps, any>{
   // 点赞
   likeArticle = async () => {
     const { videoDate } = this.state
-
     if (!videoDate.islike) {
-      const like = await request.post('/like_article', { uid: this.props.userInfo.uid, article_id: videoDate.article_id })
+      await request.post('/like_article', { uid: this.props.userInfo.uid, article_id: videoDate.article_id })
       await request.delete('/unlike_article' + stringfyquery({ uid: this.props.userInfo.uid, article_id: videoDate.article_id }))
-      if (like.status == 200) {
-        if (videoDate.isunlike) {
-          this.setState({ videoDate: { ...videoDate, islike: true, likeNum: videoDate.likeNum + 1, isunlike: false, unlikeNum: videoDate.unlikeNum - 1 } })
-        } else {
-          this.setState({ videoDate: { ...videoDate, islike: true, likeNum: videoDate.likeNum + 1 } })
-        }
-      }
     } else {
-      const unlike = await request.delete('/like_article' + stringfyquery({ uid: this.props.userInfo.uid, article_id: videoDate.article_id }))
-      if (unlike.status == 200) {
-        this.setState({ videoDate: { ...videoDate, islike: false, likeNum: videoDate.likeNum - 1 } })
-      }
+      await request.delete('/like_article' + stringfyquery({ uid: this.props.userInfo.uid, article_id: videoDate.article_id }))
     }
+    this.getArtilceInfo(videoDate.article_id)
   }
   // 不喜欢
   unlikeArticle = async () => {
     const { videoDate } = this.state
     if (!videoDate.isunlike) {
-      const unlike = await request.post('/unlike_article', { uid: this.props.userInfo.uid, article_id: videoDate.article_id })
+      await request.post('/unlike_article', { uid: this.props.userInfo.uid, article_id: videoDate.article_id })
       await request.delete('/like_article' + stringfyquery({ uid: this.props.userInfo.uid, article_id: videoDate.article_id }))
-      if (unlike.status == 200) {
-        if (videoDate.islike) {
-          this.setState({ videoDate: { ...videoDate, isunlike: true, unlikeNum: videoDate.unlikeNum + 1, islike: false, likeNum: videoDate.likeNum - 1 } })
-        } else {
-          this.setState({ videoDate: { ...videoDate, isunlike: true, unlikeNum: videoDate.unlikeNum + 1 } })
-        }
-      }
     } else {
-      const like = await request.delete('/unlike_article' + stringfyquery({ uid: this.props.userInfo.uid, article_id: videoDate.article_id }))
-      if (like.status == 200) {
-        this.setState({ videoDate: { ...videoDate, isunlike: false, unlikeNum: videoDate.unlikeNum - 1 } })
-      }
+      await request.delete('/unlike_article' + stringfyquery({ uid: this.props.userInfo.uid, article_id: videoDate.article_id }))
     }
+    this.getArtilceInfo(videoDate.article_id)
   }
   // 拉黑
   black = async () => {
@@ -173,13 +164,19 @@ class Index extends Component<MyVideoProps, any>{
       Alert.alert('举报文章成功')
     }
   }
+  hideAlert = (isdelete:boolean)=>{
+    if(isdelete){
+      if(this.props.deleteArticle)
+      this.props.deleteArticle()
+    }
+    this.setState({showAlert:false})
+  }
   render() {
-    const { commentNum, videoMount, paused, videoDate, isEnd, startTime, endTime, progressBar, videoHeight, videoWidth, resizeMode } = this.state
-
+    const { showAlert,commentNum, videoMount, paused, videoDate, isEnd, startTime, endTime, progressBar, videoHeight, videoWidth, resizeMode } = this.state
     return (
       <View style={{ opacity: videoMount ? 1 : 0, borderBottomWidth: 10, borderBottomColor: "#f2f2f2" }}>
         <View style={{ flexDirection: "row", position: "relative", justifyContent: "space-between", alignItems: "center", paddingLeft: 10, paddingRight: 10 }}>
-          <TouchableOpacity style={{ marginTop: 10, marginBottom: 10, height: 40, flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity onPress={()=>{if(this.props.gotoUserDetail)this.props.gotoUserDetail()}} style={{ marginTop: 10, marginBottom: 10, height: 40, flexDirection: "row", alignItems: "center" }}>
             <Image source={{ uri: baseURL + videoDate.avatar }} style={{ width: 38, height: 38, borderRadius: 19, borderColor: '#e9e9e9', borderWidth: 1 }} />
             <Text style={{ color: "#000", fontSize: 17, marginLeft: 15 }}>{videoDate.nickname}</Text>
           </TouchableOpacity>
@@ -200,11 +197,33 @@ class Index extends Component<MyVideoProps, any>{
                   }
                 >
                   <Text style={{ fontFamily: "iconfont", fontSize: 18, marginRight: 5 }}>{'\ue65e'}</Text>
-                </Tooltip> : <></>
+                </Tooltip> : <Text onPress={()=>{this.setState({showAlert:true})}}>删除</Text>
             }
+             {/* 弹窗开始 */}
+             <AwesomeAlert
+              show={showAlert}
+              showProgress={false}
+              title="提示"
+              message="确实删除此评论吗?"
+              // animatedValue={0}
+              closeOnTouchOutside={true}
+              closeOnHardwareBackPress={false}
+              showCancelButton={true}
+              showConfirmButton={true}
+              cancelText="删除"
+              confirmText="取消"
+              // confirmButtonColor="#DD6B55"
+              onCancelPressed={() => {
+                this.hideAlert(true);
+              }}
+              onConfirmPressed={() => {
+                this.hideAlert(false);
+              }}
+            />
+            {/* 弹窗结束 */}
           </View>
         </View>
-
+       { videoDate.title?<Text style={{paddingLeft:10,paddingBottom:10,fontSize:18}}>{videoDate.title}</Text>:<></>}
         <TouchableOpacity activeOpacity={1} style={{ position: "relative", height: videoHeight, width: "100%", backgroundColor: "#000" }} onPress={this.showProgressBar}>
           <Video source={{ uri: baseURL + videoDate.content[0] }}   // Can be a URL or a local file.
             ref={(ref) => {

@@ -1,9 +1,10 @@
 import React, { Component } from 'react'
-import { Text, View, Image, TouchableOpacity, StyleSheet } from 'react-native'
+import { Text, View, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import GobackTitle from '../../../compontents/GobackTitle'
-import request,{baseURL} from '../../../util/request'
+import request, { baseURL } from '../../../util/request'
 import TabCard from './TabCard'
 import { connect } from 'react-redux'
+import stringfyquery from '../../../util/stringfyquery'
 let userInfo: any
 class index extends Component<any, any> {
   state = {
@@ -14,15 +15,30 @@ class index extends Component<any, any> {
   }
   constructor(props: any) {
     super(props)
-    this.state.userInfo = this.props.route.params.userInfo
+    this.state.userInfo = this.props.route.params.uid
   }
   async componentDidMount() {
-    const { userInfo } = this.state
-    const uid = { uid: userInfo?.uid }
-    const attention: any[] = await request.get('/attention', uid)
-    const black: any[] = await request.get('/black', uid)
-    const fans: any[] = await request.get('/fans', uid)
-    this.setState({ attention, black, fans })
+    const res: any = await request.get('/users' + stringfyquery({ uid: this.props.route.params.uid }))
+    if (res.status == 200) {
+      const uid = res.data[0].uid
+      const attention: any[] = await request.get('/attention' + stringfyquery({ uid }))
+      const black: any[] = await request.get('/black' + stringfyquery({ uid }))
+      const fans: any[] = await request.get('/fans' + stringfyquery({ uid }))
+      this.setState({ userInfo: res.data[0], attention, black, fans })
+    }
+
+  }
+  attention = async () => {
+    const res = await request.post('/attention', { uid: this.props.userInfo.uid, aid: this.state.userInfo.uid })
+    if (res.status == 200) {
+      Alert.alert('关注用户成功')
+    } else {
+      Alert.alert('已关注')
+    }
+  }
+  gotoChart = ()=>{
+    this.props.navigation.navigate('Chat',{uid:this.state.userInfo.uid })
+
   }
   render() {
     const { userInfo, attention, black, fans } = this.state
@@ -31,7 +47,7 @@ class index extends Component<any, any> {
         <GobackTitle title={userInfo.nickname} props={this.props} rightText={'\ue651'} rightTextStyle={{ fontFamily: "iconfont", fontSize: 18, textAlign: "right" }} />
         <View style={{ height: 155, backgroundColor: "#fff", paddingLeft: 20, borderBottomColor: '#ccc', borderBottomWidth: 1 }}>
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", height: 90 }}>
-            <Image source={{uri:baseURL+userInfo.avatar}} style={{ width: 70, height: 70, borderRadius: 35 }} />
+            <Image source={{ uri: baseURL + userInfo.avatar }} style={{ width: 70, height: 70, borderRadius: 35 }} />
             <View style={{ flex: 1, marginLeft: 20, marginRight: 10, marginBottom: 10 }}>
               <View style={{ flexDirection: "row", flex: 1, width: '100%' }}>
                 <TouchableOpacity style={styles.card} onPress={() => this.props.navigation.navigate('CardInfo', { CardType: 0 })}>
@@ -55,9 +71,14 @@ class index extends Component<any, any> {
                 this.props.userInfo.uid == userInfo.uid ?
                   <TouchableOpacity onPress={() => this.props.navigation.navigate('Copyreader')} style={{ height: 30, marginTop: 5, width: '100%', borderWidth: 1, borderColor: '#f55', justifyContent: "center", alignItems: "center", borderRadius: 5 }}>
                     <Text style={{ color: "#f55" }}>编辑资料</Text>
-                  </TouchableOpacity> : <TouchableOpacity style={{ height: 30, marginTop: 5, width: '100%', borderWidth: 1, borderColor: '#f55', justifyContent: "center", alignItems: "center", borderRadius: 5 }}>
-                    <Text style={{ color: "#f55" }}>关注</Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity> : <View style={{flexDirection:'row',alignItems:"center",justifyContent:"space-around"}}>
+                    <TouchableOpacity onPress={this.attention} style={{ height: 30, marginTop: 5, width: '45%', justifyContent: "center", alignItems: "center", borderRadius: 5 ,backgroundColor:"#f55"}}>
+                      <Text style={{ color: "#fff" }}>关注</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={this.gotoChart} style={{ height: 30, marginTop: 5, width: '45%', borderWidth: 1, borderColor: '#f55', justifyContent: "center", alignItems: "center", borderRadius: 5 }}>
+                      <Text style={{ color: "#f55" }}>发消息</Text>
+                    </TouchableOpacity>
+                  </View>
               }
             </View>
           </View>

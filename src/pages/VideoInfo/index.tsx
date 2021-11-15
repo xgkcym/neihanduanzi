@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Text, View, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, TextInput, GestureResponderEvent } from 'react-native'
+import { Text, View, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, TextInput, GestureResponderEvent, Alert } from 'react-native'
 import Video from 'react-native-video'
 import getStringTime from '../../util/getStringTime'
 import { windowHeight, windowWidth } from '../../util/style'
@@ -9,7 +9,8 @@ import SvgUri from 'react-native-svg-uri';
 import svgXmlData from '../../util/svgXmlData'
 import request, { baseURL } from '../../util/request'
 import { connect } from 'react-redux'
-import { Alert } from 'react-native'
+import AwesomeAlert from 'react-native-awesome-alerts';
+import stringfyquery from '../../util/stringfyquery'
 let resizeMode: "stretch" | "contain" | "cover" | "none" | undefined;
 let videoDate: any
 let comment2Date: any
@@ -20,16 +21,23 @@ class Index extends Component<any, any>{
     this.state.videoDate = this.props.route.params.videoInfo
     this.state.videoUrl = this.props.route.params.videoInfo.content[0]
   }
-  getArtilceInfo = async (article_id: any) => {
+  getArtilceInfo = async (article_id: any = this.state.videoDate.article_id) => {
+    const { comment2Date } = this.state
     const res: any = await request.get(`/article?article_id=${article_id}`)
     if (res.status == 200) {
-      this.setState({ videoDate: {...res.article[0]} })
+      let comment: any = res.article[0].comment.filter((v: any) => {
+        if (comment2Date) {
+          return v.comment_id == comment2Date.comment_id
+        }
+        return v
+      })
+      this.setState({ videoDate: { ...res.article[0] }, comment2Date: comment[0] })
     }
   }
   commentinput: any
   player: any
   state = {
-    videoUrl:'',
+    videoUrl: '',
     videoDate: videoDate,
     startTime: 0,
     endTime: 0,
@@ -45,12 +53,13 @@ class Index extends Component<any, any>{
     visible: false, //二级评论
     comment2Date: comment2Date,
     comment2placeholder: '',
-    comment2user: comment2user,//保存点击用户进行评论
+    comment2user: comment2user,//保存点击用户进行评论,
+    showAlert: false,
+    deletecomment_id: '',
+    showAlert2: false
   }
   //视频加载时
   onLoad = (event: any) => {
-    console.log(event);
-
     let videoHeight
     let videoWidth
     let percentage = 0.67
@@ -114,12 +123,10 @@ class Index extends Component<any, any>{
   onError = (data: any) => {
     console.log(data);
   }
-  gotoVideoInfo = () => {
-    this.props.props.navigation.navigate('VideoInfo')
-  }
 
-  gotoUserInfo = () => {
 
+  gotoUserDetail = (uid:any) => {
+    this.props.navigation.navigate('UserDetail', { uid })
   }
   // 关注
   attention = async () => {
@@ -130,7 +137,31 @@ class Index extends Component<any, any>{
       Alert.alert('已关注')
     }
   }
+  hideAlert = async (isdelete?: Boolean) => {
+    const { visible, videoDate, deletecomment_id, comment2Date } = this.state
 
+    if (visible) {
+      if (isdelete) {
+        const res = await request.delete(`/comment2?comment2_id=${deletecomment_id}`)
+        if (res.status == 200) {
+          this.getArtilceInfo(videoDate.article_id)
+          this.setState({
+            showAlert2: false,
+          });
+        }
+      }
+    } else {
+      if (isdelete) {
+        const res = await request.delete(`/comment?comment_id=${deletecomment_id}`)
+        if (res.status == 200) {
+          this.getArtilceInfo(videoDate.article_id)
+          this.setState({
+            showAlert: false,
+          });
+        }
+      }
+    }
+  };
   // 提交评论
   postComment = async () => {
     const { commentValue, videoDate, comment2placeholder, comment2user, visible, comment2Date } = this.state
@@ -145,7 +176,6 @@ class Index extends Component<any, any>{
       this.setState({ commentValue: "" })
     } else {
       if (comment2user) {
-        console.log(comment2user);
         const res = await request.post('/comment2', { uid: this.props.userInfo.uid, aid: comment2user.uid, article_id: videoDate.article_id, text: commentValue, comment_id: comment2user.comment_id })
         if (res.status == 200) {
           Alert.alert('评论成功')
@@ -166,9 +196,8 @@ class Index extends Component<any, any>{
           this.setState({ commentValue: "" })
         }
       }
-     
-    }
 
+    }
     this.getArtilceInfo(videoDate.article_id)
   }
   // 获取二级评论
@@ -180,8 +209,50 @@ class Index extends Component<any, any>{
     this.commentinput.focus()
   }
 
+  // 点赞评论
+  likeComment = async (comment: any) => {
+    const { visible } = this.state
+    if (!visible) {
+      if (!comment.islike) {
+        await request.post('/like_comment', { uid: this.props.userInfo.uid, comment_id: comment.comment_id })
+        await request.delete('/unlike_comment' + stringfyquery({ uid: this.props.userInfo.uid, comment_id: comment.comment_id }))
+      } else {
+        await request.delete('/like_comment' + stringfyquery({ uid: this.props.userInfo.uid, comment_id: comment.comment_id }))
+      }
+    } else {
+      if (!comment.islike) {
+        await request.post('/like_comment', { uid: this.props.userInfo.uid, comment_id: comment.comment2_id })
+        await request.delete('/unlike_comment' + stringfyquery({ uid: this.props.userInfo.uid, comment_id: comment.comment2_id }))
+      } else {
+        await request.delete('/like_comment' + stringfyquery({ uid: this.props.userInfo.uid, comment_id: comment.comment2_id }))
+      }
+    }
+
+    this.getArtilceInfo()
+  }
+  //不喜欢评论
+  unlikeComment = async (comment: any) => {
+    const { visible } = this.state
+    if (!visible) {
+      if (!comment.isunlike) {
+        await request.post('/unlike_comment', { uid: this.props.userInfo.uid, comment_id: comment.comment_id })
+        await request.delete('/like_comment' + stringfyquery({ uid: this.props.userInfo.uid, comment_id: comment.comment_id }))
+      } else {
+        await request.delete('/unlike_comment' + stringfyquery({ uid: this.props.userInfo.uid, comment_id: comment.comment_id }))
+      }
+    } else {
+      if (!comment.isunlike) {
+        await request.post('/unlike_comment', { uid: this.props.userInfo.uid, comment_id: comment.comment2_id })
+        await request.delete('/like_comment' + stringfyquery({ uid: this.props.userInfo.uid, comment_id: comment.comment2_id }))
+      } else {
+        await request.delete('/unlike_comment' + stringfyquery({ uid: this.props.userInfo.uid, comment_id: comment.comment2_id }))
+      }
+    }
+
+    this.getArtilceInfo()
+  }
   render() {
-    const {commentValue, videoUrl,visible, videoMount, paused, videoDate, isEnd, startTime, endTime, progressBar, videoHeight, videoWidth, resizeMode, comment2Date, comment2placeholder } = this.state
+    const { showAlert2, showAlert, commentValue, videoUrl, visible, videoMount, paused, videoDate, isEnd, startTime, endTime, progressBar, videoHeight, videoWidth, resizeMode, comment2Date, comment2placeholder } = this.state
     return (
       <View style={{ opacity: videoMount ? 1 : 0, flex: 1, position: "relative", backgroundColor: "#fff" }}>
         <Text onPress={() => this.props.navigation.goBack()} style={{ fontFamily: "iconfont", color: "#fff", position: "absolute", zIndex: 20, top: 20, left: 15, fontSize: 22, width: 30, height: 30 }}>{'\ue600'}</Text>
@@ -256,7 +327,7 @@ class Index extends Component<any, any>{
             <View style={{ flex: 1 }}>
               <View style={{ paddingLeft: 15, paddingRight: 15 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 70 }}>
-                  <TouchableOpacity style={{ flexDirection: "row", alignItems: "center" }}>
+                  <TouchableOpacity onPress={()=>this.gotoUserDetail(videoDate.uid)} style={{ flexDirection: "row", alignItems: "center" }}>
                     <Image source={{ uri: baseURL + videoDate.avatar }} style={styles.avatar} />
                     <View style={{ marginLeft: 10 }}>
                       <Text style={{ marginBottom: 3, fontSize: 16, fontWeight: '800' }}>{videoDate.nickname}</Text>
@@ -300,38 +371,62 @@ class Index extends Component<any, any>{
                 {/* 评论开始 */}
                 <View style={{ marginLeft: 15, marginRight: 15 }}>
                   {
+
                     videoDate.comment.map((v: any) => (
                       <TouchableOpacity activeOpacity={1} key={v.comment_id} style={{ flexDirection: "row", marginTop: 20 }}>
-                        <TouchableOpacity activeOpacity={1} onPress={() => this.gotoUserInfo()}>
+                        <TouchableOpacity activeOpacity={1} onPress={() => this.gotoUserDetail(v.uid)}>
                           <Image style={styles.avatar} source={{ uri: baseURL + v.avatar }} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => this.postusercomment({ uid: v.uid, nickname: v.nickname, comment_id: v.comment_id }, `评论${v.nickname}用户`)} style={{ marginLeft: 10, flex: 1 }}>
                           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'space-between' }}>
                             <TouchableOpacity style={{ flexDirection: 'row', alignItems: "center" }}>
-                              <Text style={{ marginRight: 10, fontSize: 15 }}>{v.nickname}</Text>
+                              <Text style={{ marginRight: 10, fontSize: 15, }}>{v.nickname}</Text>
                               <Text style={{ color: "#666" }}>{lastTimeStr(v.create_time)}</Text>
                             </TouchableOpacity>
                             <View style={{ flexDirection: "row", alignItems: 'center' }}>
-                              <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                                <Text style={{ marginRight: 2 }} >{v.likeNum}</Text>
-                                <Text style={{ fontFamily: 'iconfont', fontSize: 16 }}>{'\ue60f'}</Text>
+                              <TouchableOpacity onPress={() => this.likeComment(v)} style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
+                                <Text style={{ marginRight: 2, color: v.islike ? '#f00' : '#444' }} >{v.likeNum}</Text>
+                                <Text style={{ fontFamily: 'iconfont', fontSize: 16, color: v.islike ? '#f00' : '#444' }}>{'\ue60f'}</Text>
                               </TouchableOpacity>
-                              <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                                <Text style={{ marginRight: 2 }} >{v.unlikeNum}</Text>
-                                <Text style={{ fontFamily: 'iconfont' }}>{'\ue9a4'}</Text>
+                              <TouchableOpacity onPress={() => this.unlikeComment(v)} style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
+                                <Text style={{ marginRight: 2, color: v.isunlike ? '#f00' : '#444' }} >{v.unlikeNum}</Text>
+                                <Text style={{ fontFamily: 'iconfont', color: v.isunlike ? '#f00' : '#444' }}>{'\ue9a4'}</Text>
                               </TouchableOpacity>
                             </View>
                           </View>
                           <Text style={{ fontSize: 16, marginTop: 5 }}>
                             {v.text}
                           </Text>
-                          <View style={{ flexDirection: 'row', marginBottom: 10, marginTop: 10 }}>
+                          <View style={{ flexDirection: 'row', marginBottom: 10, marginTop: 10, alignItems: 'center' }}>
                             {v.comment.length == 0 ? <TouchableOpacity style={{ paddingLeft: 7, paddingRight: 7, height: 24, justifyContent: "center", alignItems: 'center', backgroundColor: "#ddd", borderRadius: 12 }}>
                               <Text>回复</Text>
                             </TouchableOpacity> : <TouchableOpacity activeOpacity={1} onPress={() => this.comment2data(v)} style={{ paddingLeft: 7, paddingRight: 7, height: 24, justifyContent: "center", alignItems: 'center', backgroundColor: "#ddd", borderRadius: 12 }}>
                               <Text style={{ fontFamily: "iconfont", fontSize: 12 }}>{v.comment.length}条回复{'\ue65f'}</Text>
                             </TouchableOpacity>}
                             <View style={{ flex: 1 }}></View>
+                            <Text onPress={() => this.setState({ showAlert: true, deletecomment_id: v.comment_id })}>删除</Text>
+                            {/* 弹窗开始 */}
+                            <AwesomeAlert
+                              show={showAlert}
+                              showProgress={false}
+                              title="提示"
+                              message="确实删除此评论吗?"
+                              // animatedValue={0}
+                              closeOnTouchOutside={true}
+                              closeOnHardwareBackPress={false}
+                              showCancelButton={true}
+                              showConfirmButton={true}
+                              cancelText="删除"
+                              confirmText="取消"
+                              // confirmButtonColor="#DD6B55"
+                              onCancelPressed={() => {
+                                this.hideAlert(true);
+                              }}
+                              onConfirmPressed={() => {
+                                this.hideAlert(false);
+                              }}
+                            />
+                            {/* 弹窗结束 */}
                           </View>
                         </TouchableOpacity>
                       </TouchableOpacity>
@@ -349,7 +444,7 @@ class Index extends Component<any, any>{
               </View>
               <ScrollView style={{ flex: 1, backgroundColor: "#f2f2f2" }}>
                 <TouchableOpacity activeOpacity={1} style={{ paddingLeft: 15, paddingRight: 15, flexDirection: "row", paddingTop: 20, paddingBottom: 20, backgroundColor: "#fff" }}>
-                  <TouchableOpacity activeOpacity={1} onPress={() => this.gotoUserInfo()}>
+                  <TouchableOpacity activeOpacity={1} onPress={() => this.gotoUserDetail(comment2Date.uid)}>
                     <Image style={styles.avatar} source={{ uri: baseURL + comment2Date.avatar }} />
                   </TouchableOpacity>
                   <View style={{ marginLeft: 10, flex: 1 }}>
@@ -359,13 +454,13 @@ class Index extends Component<any, any>{
                         <Text style={{ color: "#666" }}>{lastTime(new Date().getTime() - 1000 * 60 * 60 * 1)}</Text>
                       </TouchableOpacity>
                       <View style={{ flexDirection: "row", alignItems: 'center' }}>
-                        <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                          <Text style={{ marginRight: 2 }} >{comment2Date.likeNum}</Text>
-                          <Text style={{ fontFamily: 'iconfont', fontSize: 16 }}>{'\ue60f'}</Text>
+                        <TouchableOpacity onPress={() => this.likeComment(comment2Date)} style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
+                          <Text style={{ marginRight: 2, color: comment2Date.islike ? '#f00' : '#000' }} >{comment2Date.likeNum}</Text>
+                          <Text style={{ fontFamily: 'iconfont', fontSize: 16, color: comment2Date.islike ? '#f00' : '#000' }}>{'\ue60f'}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                          <Text style={{ marginRight: 2 }} >{comment2Date.unlikeNum}</Text>
-                          <Text style={{ fontFamily: 'iconfont' }}>{'\ue9a4'}</Text>
+                        <TouchableOpacity onPress={() => this.unlikeComment(comment2Date)} style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
+                          <Text style={{ marginRight: 2, color: comment2Date.isunlike ? '#f00' : '#000' }} >{comment2Date.unlikeNum}</Text>
+                          <Text style={{ fontFamily: 'iconfont', color: comment2Date.isunlike ? '#f00' : '#000' }}>{'\ue9a4'}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -381,23 +476,23 @@ class Index extends Component<any, any>{
                   {
                     comment2Date.comment.map((v: any) => (
                       <TouchableOpacity activeOpacity={1} key={v.comment2_id} style={{ flexDirection: "row", marginBottom: 30 }}>
-                        <TouchableOpacity  activeOpacity={1} onPress={() => this.gotoUserInfo()}>
+                        <TouchableOpacity activeOpacity={1} onPress={() => this.gotoUserDetail(v.uid)}>
                           <Image style={styles.avatar} source={{ uri: baseURL + v.avatar }} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={()=>this.postusercomment({ uid: v.uid, nickname: v.nickname, comment_id: v.comment_id }, `评论${v.nickname}用户`)} style={{ marginLeft: 10, flex: 1 }}>
+                        <TouchableOpacity onPress={() => this.postusercomment({ uid: v.uid, nickname: v.nickname, comment_id: v.comment_id }, `评论${v.nickname}用户`)} style={{ marginLeft: 10, flex: 1 }}>
                           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'space-between' }}>
                             <TouchableOpacity style={{ flexDirection: 'row', alignItems: "center" }}>
                               <Text style={{ marginRight: 10, fontSize: 15 }}>{v.nickname}</Text>
                               <Text style={{ color: "#666" }}>{lastTime(new Date().getTime() - 1000 * 60 * 60 * 1)}</Text>
                             </TouchableOpacity>
                             <View style={{ flexDirection: "row", alignItems: 'center' }}>
-                              <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                                <Text style={{ marginRight: 2 }} >{v.likeNum}</Text>
-                                <Text style={{ fontFamily: 'iconfont', fontSize: 16 }}>{'\ue60f'}</Text>
+                              <TouchableOpacity onPress={() => this.likeComment(v)} style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
+                                <Text style={{ marginRight: 2, color: v.islike ? "#f00" : '#000' }} >{v.likeNum}</Text>
+                                <Text style={{ fontFamily: 'iconfont', fontSize: 16, color: v.islike ? "#f00" : '#000' }}>{'\ue60f'}</Text>
                               </TouchableOpacity>
-                              <TouchableOpacity style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
-                                <Text style={{ marginRight: 2 }} >{v.unlikeNum}</Text>
-                                <Text style={{ fontFamily: 'iconfont' }}>{'\ue9a4'}</Text>
+                              <TouchableOpacity onPress={() => this.unlikeComment(v)} style={{ width: 55, flexDirection: 'row', alignItems: 'center', justifyContent: "flex-end" }}>
+                                <Text style={{ marginRight: 2, color: v.isunlike ? "#f00" : '#000' }} >{v.unlikeNum}</Text>
+                                <Text style={{ fontFamily: 'iconfont', color: v.isunlike ? "#f00" : '#000' }}>{'\ue9a4'}</Text>
                               </TouchableOpacity>
                             </View>
                           </View>
@@ -408,8 +503,30 @@ class Index extends Component<any, any>{
                             <TouchableOpacity style={{ paddingLeft: 7, paddingRight: 7, height: 24, justifyContent: "center", alignItems: 'center', backgroundColor: "#ddd", borderRadius: 12 }}>
                               <Text>回复</Text>
                             </TouchableOpacity>
-
                             <View style={{ flex: 1 }}></View>
+                            <Text onPress={() => this.setState({ showAlert2: true, deletecomment_id: v.comment2_id })}>删除</Text>
+                            {/* 弹窗开始 */}
+                            <AwesomeAlert
+                              show={showAlert2}
+                              showProgress={false}
+                              title="提示"
+                              message="确实删除此评论吗?"
+                              // animatedValue={0}
+                              closeOnTouchOutside={true}
+                              closeOnHardwareBackPress={false}
+                              showCancelButton={true}
+                              showConfirmButton={true}
+                              cancelText="删除"
+                              confirmText="取消"
+                              // confirmButtonColor="#DD6B55"
+                              onCancelPressed={() => {
+                                this.hideAlert(true);
+                              }}
+                              onConfirmPressed={() => {
+                                this.hideAlert(false);
+                              }}
+                            />
+                            {/* 弹窗结束 */}
                           </View>
                         </TouchableOpacity>
                       </TouchableOpacity>

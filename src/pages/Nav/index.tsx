@@ -19,34 +19,36 @@ import TextInfoScreen from '../TextInfo'
 import DomoScreen from '../Demo';
 import { setNavigation } from '../../redux/actions/navigation';
 import { setUserInfo } from '../../redux/actions/userInfo';
-import {connect} from 'react-redux'
+import { connect } from 'react-redux'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import request from '../../util/request';
+import JMessage from '../../util/JMessage';
 
 const Stack = createNativeStackNavigator();
-interface indexProps{
-  setNavigation?:any
-  setUserInfo?:any
+interface indexProps {
+  setNavigation?: any
+  setUserInfo?: any
 }
-function index(props:indexProps) {
-  const init  = React.useCallback(async()=>{
-   const userInfostr:any =  await AsyncStorage.getItem('userInfo')
-   const userInfo = JSON.parse(userInfostr)
-   props.setUserInfo(userInfo)
-  },[])
-  React.useEffect(()=>{
+function index(props: indexProps) {
+  const init = React.useCallback(async () => {
+    const userInfostr: any = await AsyncStorage.getItem('userInfo')
+    const userInfo = JSON.parse(userInfostr)
+    await JMessage.login(userInfo.uid, userInfo.uid + 123)
+    props.setUserInfo(userInfo)
+  }, [])
+  React.useEffect(() => {
     init()
-  },[])
+  }, [])
   return (
     <SafeAreaProvider>
-      <NavigationContainer ref={ref=>props.setNavigation(ref)}>
+      <NavigationContainer ref={ref => props.setNavigation(ref)}>
         <Stack.Navigator initialRouteName='Tab' screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Cover" component={CoverScreen} />
           <Stack.Screen name="Tab" component={TabScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Setting" component={SettingScreen} />
-          <Stack.Screen name="MyInfo" component={MyInfoScreen} />
+          <Stack.Screen name="UserDetail" component={MyInfoScreen} />
           <Stack.Screen name="VideoInfo" component={VideoInfoScreen} />
           <Stack.Screen name="Publish" component={PublishScreen} />
           <Stack.Screen name="Copyreader" component={CopyreaderScreen} />
@@ -60,5 +62,5 @@ function index(props:indexProps) {
     </SafeAreaProvider>
   )
 }
-const Nav = connect(state=>({}),{setNavigation,setUserInfo})(index)
+const Nav = connect(state => ({}), { setNavigation, setUserInfo })(index)
 export default Nav

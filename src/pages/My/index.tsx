@@ -43,7 +43,7 @@ class index extends Component<indexProps> {
               <Text style={{color:"#fff",fontSize:18}}>登录/注册</Text>
             </TouchableOpacity>
           }
-          {this.props.userInfo?.uid?<Text onPress={() => this.props.navigation.navigate('MyInfo',{userInfo:this.props.userInfo})} style={{ width: 75, height: 30, lineHeight: 30, textAlign: 'center', fontWeight: '100', fontSize: 13, backgroundColor: "#ddd", borderTopLeftRadius: 15, borderBottomLeftRadius: 15 }}>个人主页</Text>:<></>}
+          {this.props.userInfo?.uid?<Text onPress={() => this.props.navigation.navigate('UserDetail',{uid:this.props.userInfo?.uid})} style={{ width: 75, height: 30, lineHeight: 30, textAlign: 'center', fontWeight: '100', fontSize: 13, backgroundColor: "#ddd", borderTopLeftRadius: 15, borderBottomLeftRadius: 15 }}>个人主页</Text>:<></>}
         </View>
         <View style={{ flexDirection: "row", height: 110, alignItems: 'center', paddingLeft: 15, paddingRight: 15 }}>
           <TouchableOpacity style={{ ...styles.card, borderTopLeftRadius: 15, borderBottomLeftRadius: 15 }}>
