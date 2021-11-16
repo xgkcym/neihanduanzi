@@ -6,6 +6,7 @@ import ImageView from './ImageView'
 import {connect} from 'react-redux'
 import stringfyquery from '../../util/stringfyquery'
 import AwesomeAlert from 'react-native-awesome-alerts'
+import TransitionEmoji from '../TransitionEmoji'
 interface MyImageProps{
   gotoImageInfo?:Function,
   imageInfo:any,
@@ -139,7 +140,13 @@ class Index extends Component <MyImageProps>{
             {/* 弹窗结束 */}
           </View>
         </View>
-        { imageInfo.title?<Text style={{paddingLeft:10,paddingBottom:10,fontSize:18}}>{imageInfo.title}</Text>:<></>}
+          {imageInfo.title ?
+          <TransitionEmoji
+            value={imageInfo.title}
+            style={{ paddingLeft: 10, paddingBottom: 10 }}
+            fontStyle={{fontSize:18}}
+          /> : <></>
+        }
         {/*头像  */}
         <ImageView  imageArr={imageInfo.content} />
         <View style={{ flexDirection: "row" }}>

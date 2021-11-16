@@ -37,43 +37,50 @@ export default {
       },
     );
   },
-  logout:JMessage.logout,
+  logout: JMessage.logout,
   // 发送消息
-  sendTextMessage(username: any,text: any,extras: any,type?: 'single' | 'group'){
-    return new Promise((resolve,reject)=>{
-      JMessage.sendTextMessage({ type: type ||'single',username,text,extras,messageSendingOptions: JMessage.messageSendingOptions},
-      resolve({code:10000,mes:'发送成功'}), reject({code:10002,mes:'发送失败'}))
+  sendTextMessage(username: any, text: any, extras: any, type?: 'single' | 'group') {
+    return new Promise((resolve, reject) => {
+      JMessage.sendTextMessage({ type: type || 'single', username, text, extras, messageSendingOptions: JMessage.messageSendingOptions },
+        resolve({ code: 10000, mes: '发送成功' }), reject({ code: 10002, mes: '发送失败' }))
     })
   },
- /**
-   * 获取历史记录
-   * 
-   */
-  getHistoryMessages(username: any,limit: any,type?: 'single' | 'group'){
-   return new Promise((resolve,reject)=>{
-    JMessage.getHistoryMessages(
-      { 
-        type:type ||'single',
-        username,
-        from: 0,
-        limit
-      },
-      resolve,reject)
-   }) 
+  /**
+    * 获取历史记录
+    * 
+    */
+  getHistoryMessages(username: any, limit: any, type?: 'single' | 'group') {
+    return new Promise((resolve, reject) => {
+      JMessage.getHistoryMessages(
+        {
+          type: type || 'single',
+          username,
+          from: 0,
+          limit
+        },
+        resolve, reject)
+    })
   },
   /**
    * 
    * 获取最新消息
    */
-   sendImageMessage(username: any,path: any,extras: any,type?: 'single' | 'group'){
-     return new Promise((resovle,reject)=>{
-        JMessage.sendImageMessage({ type:type || 'single', username,path, extras, messageSendingOptions: JMessage.messageSendingOptions },
+  sendImageMessage(username: any, path: any, extras: any, type?: 'single' | 'group') {
+    return new Promise((resovle, reject) => {
+      JMessage.sendImageMessage({ type: type || 'single', username, path, extras, messageSendingOptions: JMessage.messageSendingOptions },
         resovle, reject)
-     })
-   },
-    getConversations(){
-      return new Promise((resovle,reject)=>{
-        JMessage.getConversations(resovle,reject)
-      })
-    }
+    })
+  },
+  getConversations() {
+    return new Promise((resovle, reject) => {
+      JMessage.getConversations(resovle, reject)
+    })
+  },
+
+  deleteConversation(username: any, appKey: any,type?: 'single' | 'group' ) {
+    return new Promise((resovle, reject) => {
+      JMessage.deleteConversation({ username, appKey, type:  type || 'single'},resovle,reject)
+    })
+  }
+
 };

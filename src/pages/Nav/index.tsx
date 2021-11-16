@@ -29,11 +29,15 @@ interface indexProps {
   setNavigation?: any
   setUserInfo?: any
 }
-function index(props: indexProps) {
+function Index(props: indexProps) {
   const init = React.useCallback(async () => {
     const userInfostr: any = await AsyncStorage.getItem('userInfo')
     const userInfo = JSON.parse(userInfostr)
-    await JMessage.login(userInfo.uid, userInfo.uid + 123)
+    try {
+     await JMessage.login(userInfo.uid, userInfo.uid + 123)
+    } catch (error) {
+      console.log(error); 
+    }
     props.setUserInfo(userInfo)
   }, [])
   React.useEffect(() => {
@@ -62,5 +66,5 @@ function index(props: indexProps) {
     </SafeAreaProvider>
   )
 }
-const Nav = connect(state => ({}), { setNavigation, setUserInfo })(index)
+const Nav = connect(state => ({}), { setNavigation, setUserInfo })(Index)
 export default Nav

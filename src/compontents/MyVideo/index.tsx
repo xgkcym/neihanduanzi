@@ -9,13 +9,14 @@ import { connect } from 'react-redux'
 import stringfyquery from '../../util/stringfyquery'
 import { Alert } from 'react-native'
 import AwesomeAlert from 'react-native-awesome-alerts'
+import TransitionEmoji from '../TransitionEmoji'
 let resizeMode: "stretch" | "contain" | "cover" | "none" | undefined;
 interface MyVideoProps {
   VideoDate?: any,
   gotoVideoInfo?: Function,
   userInfo?: any,
-  deleteArticle? :Function,
-  gotoUserDetail?:Function
+  deleteArticle?: Function,
+  gotoUserDetail?: Function
 }
 let videoDate: any
 class Index extends Component<MyVideoProps, any>{
@@ -49,7 +50,7 @@ class Index extends Component<MyVideoProps, any>{
     isEnd: false,
     videoMount: false,
     commentNum: 0,
-    showAlert:false
+    showAlert: false
   }
   componentDidMount() {
 
@@ -164,19 +165,19 @@ class Index extends Component<MyVideoProps, any>{
       Alert.alert('举报文章成功')
     }
   }
-  hideAlert = (isdelete:boolean)=>{
-    if(isdelete){
-      if(this.props.deleteArticle)
-      this.props.deleteArticle()
+  hideAlert = (isdelete: boolean) => {
+    if (isdelete) {
+      if (this.props.deleteArticle)
+        this.props.deleteArticle()
     }
-    this.setState({showAlert:false})
+    this.setState({ showAlert: false })
   }
   render() {
-    const { showAlert,commentNum, videoMount, paused, videoDate, isEnd, startTime, endTime, progressBar, videoHeight, videoWidth, resizeMode } = this.state
+    const { showAlert, commentNum, videoMount, paused, videoDate, isEnd, startTime, endTime, progressBar, videoHeight, videoWidth, resizeMode } = this.state
     return (
       <View style={{ opacity: videoMount ? 1 : 0, borderBottomWidth: 10, borderBottomColor: "#f2f2f2" }}>
         <View style={{ flexDirection: "row", position: "relative", justifyContent: "space-between", alignItems: "center", paddingLeft: 10, paddingRight: 10 }}>
-          <TouchableOpacity onPress={()=>{if(this.props.gotoUserDetail)this.props.gotoUserDetail()}} style={{ marginTop: 10, marginBottom: 10, height: 40, flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity onPress={() => { if (this.props.gotoUserDetail) this.props.gotoUserDetail() }} style={{ marginTop: 10, marginBottom: 10, height: 40, flexDirection: "row", alignItems: "center" }}>
             <Image source={{ uri: baseURL + videoDate.avatar }} style={{ width: 38, height: 38, borderRadius: 19, borderColor: '#e9e9e9', borderWidth: 1 }} />
             <Text style={{ color: "#000", fontSize: 17, marginLeft: 15 }}>{videoDate.nickname}</Text>
           </TouchableOpacity>
@@ -197,10 +198,10 @@ class Index extends Component<MyVideoProps, any>{
                   }
                 >
                   <Text style={{ fontFamily: "iconfont", fontSize: 18, marginRight: 5 }}>{'\ue65e'}</Text>
-                </Tooltip> : <Text onPress={()=>{this.setState({showAlert:true})}}>删除</Text>
+                </Tooltip> : <Text onPress={() => { this.setState({ showAlert: true }) }}>删除</Text>
             }
-             {/* 弹窗开始 */}
-             <AwesomeAlert
+            {/* 弹窗开始 */}
+            <AwesomeAlert
               show={showAlert}
               showProgress={false}
               title="提示"
@@ -223,7 +224,13 @@ class Index extends Component<MyVideoProps, any>{
             {/* 弹窗结束 */}
           </View>
         </View>
-       { videoDate.title?<Text style={{paddingLeft:10,paddingBottom:10,fontSize:18}}>{videoDate.title}</Text>:<></>}
+        {videoDate.title ?
+          <TransitionEmoji
+            value={videoDate.title}
+            style={{ paddingLeft: 10, paddingBottom: 10 }}
+            fontStyle={{fontSize:18}}
+          /> : <></>
+        }
         <TouchableOpacity activeOpacity={1} style={{ position: "relative", height: videoHeight, width: "100%", backgroundColor: "#000" }} onPress={this.showProgressBar}>
           <Video source={{ uri: baseURL + videoDate.content[0] }}   // Can be a URL or a local file.
             ref={(ref) => {

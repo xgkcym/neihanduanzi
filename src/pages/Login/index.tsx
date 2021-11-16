@@ -8,6 +8,7 @@ import { connect } from 'react-redux'
 import { setUserInfo } from '../../redux/actions/userInfo'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import JMessage from '../../util/JMessage';
+import { asyncSetMessage } from '../../redux/actions/jmessage';
 class index extends Component<any, any> {
   state = {
     telphone: '13512712408',
@@ -45,10 +46,13 @@ class index extends Component<any, any> {
       return Alert.alert('账号密码错误')
     }
     this.props.setUserInfo(res.data)
+    await JMessage.login(res.data.uid,res.data.uid+123)
+    this.props.asyncSetMessage()
     await AsyncStorage.setItem('userInfo', JSON.stringify(res.data))
     Alert.alert('登录成功')
-    // this.props.navigation.navigate('Demo')
-    this.props.navigation.goBack()
+    this.props.navigation.goBack(()=>{
+      
+    })
   }
 
   zhece = async () => {
@@ -208,7 +212,7 @@ class index extends Component<any, any> {
   }
 }
 
-export default connect(state => ({ userInfo: state.userInfo }), { setUserInfo })(index)
+export default connect(state => ({ userInfo: state.userInfo }), { setUserInfo,asyncSetMessage})(index)
 
 const style = StyleSheet.create({
   LoginHeader: {

@@ -5,13 +5,14 @@ import { connect } from 'react-redux'
 import request, { baseURL } from '../../util/request'
 import stringfyquery from '../../util/stringfyquery'
 import AwesomeAlert from 'react-native-awesome-alerts'
+import TransitionEmoji from '../TransitionEmoji'
 interface MyTextProps {
   TextDate?: any,
   gotoTextInfo?: Function,
   deletaArticle?: any,
   userInfo?: any,
-  deleteArticle?:Function,
-  gotoUserDetail?:Function
+  deleteArticle?: Function,
+  gotoUserDetail?: Function
 }
 let textInfo: any
 class Index extends Component<MyTextProps>{
@@ -35,7 +36,7 @@ class Index extends Component<MyTextProps>{
   state = {
     textInfo: textInfo,
     commentNum: 0,
-    showAlert:false
+    showAlert: false
   }
   gototextInfo = () => {
     if (this.props.gotoTextInfo) {
@@ -81,21 +82,21 @@ class Index extends Component<MyTextProps>{
       Alert.alert('举报文章成功')
     }
   }
-  hideAlert = (isdelete:boolean)=>{
-    if(isdelete){
-      if(this.props.deleteArticle)
-      this.props.deleteArticle()
+  hideAlert = (isdelete: boolean) => {
+    if (isdelete) {
+      if (this.props.deleteArticle)
+        this.props.deleteArticle()
     }
-    this.setState({showAlert:false})
+    this.setState({ showAlert: false })
   }
   render() {
-    const { showAlert,textInfo, commentNum } = this.state
+    const { showAlert, textInfo, commentNum } = this.state
 
     return (
       <View style={{ borderBottomWidth: 10, borderBottomColor: "#f2f2f2" }}>
         {/* 头像 */}
         <View style={{ flexDirection: "row", position: "relative", justifyContent: "space-between", alignItems: "center", paddingLeft: 10, paddingRight: 10 }}>
-          <TouchableOpacity onPress={()=>{if(this.props.gotoUserDetail)this.props.gotoUserDetail()}}  style={{ marginTop: 10, marginBottom: 10, height: 40, flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity onPress={() => { if (this.props.gotoUserDetail) this.props.gotoUserDetail() }} style={{ marginTop: 10, marginBottom: 10, height: 40, flexDirection: "row", alignItems: "center" }}>
             <Image source={{ uri: baseURL + textInfo.avatar }} style={{ width: 38, height: 38, borderRadius: 19, borderColor: '#e9e9e9', borderWidth: 1 }} />
             <Text style={{ color: "#000", fontSize: 17, marginLeft: 15 }}>{textInfo.nickname}</Text>
           </TouchableOpacity>
@@ -116,7 +117,7 @@ class Index extends Component<MyTextProps>{
                   }
                 >
                   <Text style={{ fontFamily: "iconfont", fontSize: 18, marginRight: 5 }}>{'\ue65e'}</Text>
-                </Tooltip> : <Text onPress={()=>{this.setState({showAlert:true})}}>删除</Text>
+                </Tooltip> : <Text onPress={() => { this.setState({ showAlert: true }) }}>删除</Text>
             }
             {/* 弹窗开始 */}
             <AwesomeAlert
@@ -143,7 +144,13 @@ class Index extends Component<MyTextProps>{
           </View>
         </View>
         {/*头像  */}
-        <Text style={{ paddingLeft: 15, paddingRight: 15, fontSize: 17 }}>{textInfo.title}</Text>
+        {textInfo.title ?
+          <TransitionEmoji
+            value={textInfo.title}
+            style={{ paddingLeft: 10, paddingBottom: 10 }}
+            fontStyle={{ fontSize: 18 }}
+          /> : <></>
+        }
         <View style={{ flexDirection: "row" }}>
           <TouchableOpacity style={styles.imageType}>
             <Text style={{ fontSize: 18, color: "#f33" }}>#</Text>

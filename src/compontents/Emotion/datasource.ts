@@ -1,6 +1,6 @@
 
 //符号(固定长度5，且唯一)->图片路径
-export const EMOTIONS_DATA = {
+export const EMOTIONS_DATA:any = {
   '/{weixiao}': require('./emotions/weixiao.png'), /* 微笑 */
   '/{piezui}': require('./emotions/piezui.png'), /* 撇嘴 */
   '/{se}': require('./emotions/se.png'), /* 色 */
@@ -108,7 +108,7 @@ export const EMOTIONS_DATA = {
 };
 
 //符号->中文
-export const EMOTIONS_ZHCN = {
+export const EMOTIONS_ZHCN:any = {
 
   '/{weixiao}': '[微笑]',
   '/{piezui}': '[撇嘴]',

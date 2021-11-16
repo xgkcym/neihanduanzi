@@ -11,6 +11,7 @@ import request, { baseURL } from '../../util/request';
 import stringfyquery from '../../util/stringfyquery';
 import AwesomeAlert from 'react-native-awesome-alerts';
 import {connect} from 'react-redux'
+import TransitionEmoji from '../../compontents/TransitionEmoji';
 let textInfo: any
 let comment2Date: any = null
 let comment2user: any = null
@@ -178,7 +179,13 @@ class Index extends Component<any, any>{
       <View style={{ flex: 1, position: "relative" ,backgroundColor:"#fff"}}>
         <GobackTitle title='校园论坛' props={this.props}/>
         {/* 昵称开始 */}
-        <Text style={{paddingLeft:15,paddingRight:15,fontSize:17,marginTop:10,marginBottom:10}}>{textInfo.title}</Text>
+        {textInfo.title ?
+          <TransitionEmoji
+            value={textInfo.title}
+            style={{ paddingLeft: 10, paddingBottom: 10 }}
+            fontStyle={{ fontSize: 18 }}
+          /> : <></>
+        }
         {
            !visible ?
            <View style={{ flex: 1 }}>

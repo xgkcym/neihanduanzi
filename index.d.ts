@@ -2,7 +2,8 @@ import {DefaultRootState} from 'react-redux'
 import {AxiosRequestConfig} from 'axios'
 declare module 'react-redux'{
   export interface DefaultRootState{
-    userInfo:any
+    userInfo:any,
+    jmessage:any,
   }
 }
 declare module 'axios'{

@@ -22,8 +22,13 @@ class MyTabsClass extends Component<MyTabsClassProps> {
   }
   async componentDidMount() {
     const { params } = this.props.route
-    params ? this.setState({ initialRouteName: params.initialRouteName }) : null
-    
+    if(params){
+      if(params.initialRouteName){
+        this.setState({ initialRouteName: params.initialRouteName }) 
+      }
+    }else{
+      this.setState({ initialRouteName:'Home'}) 
+    }
   }
   render() {
     const { initialRouteName } = this.state

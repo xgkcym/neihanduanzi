@@ -17,6 +17,7 @@ import request, { baseURL } from '../../../util/request'
 import stringfyquery from '../../../util/stringfyquery'
 import { connect } from 'react-redux'
 import { lastTimeStr } from '../../../util/lastTime'
+import { asyncSetMessage } from '../../../redux/actions/jmessage'
 var InputView = IMUI.ChatInput
 var MessageListView = IMUI.MessageList
 const AuroraIController = IMUI.AuroraIMUIController
@@ -91,7 +92,8 @@ class Index extends Component<any> {
     if (res.status == 200) {
       this.setState({ userInfo: res.data[0] })
     }
-    AuroraIController.addMessageListDidLoadListener(this.messageListDidLoadEvent);
+    // AuroraIController.addMessageListDidLoadListener(this.messageListDidLoadEvent);
+    this.getHistoryMessage()
 
   }
 
@@ -110,7 +112,6 @@ class Index extends Component<any> {
      */
     const { userInfo } = this.state
     const res: any = await JMessage.getHistoryMessages(userInfo.uid, 100)
-    console.log(res);
     res.map((v: any) => {
       var message = constructNormalMessage()
       if (v.from.username == this.props.userInfo.uid) {
@@ -287,7 +288,9 @@ class Index extends Component<any> {
     }
     this.lasttime = lastTimeStr((new Date()).getTime())
     // await JMessage.sendTextMessage('single',this.props.route.params.id,text,{user:JSON.stringify({...this.props.RootStore.userInfo,type:'chat'})})
-    await JMessage.sendTextMessage(userInfo.uid, text, { userInfo: JSON.stringify({ ...this.props.userInfo, type: "chat" }) })
+    await JMessage.sendTextMessage(userInfo.uid, text, { userInfo: JSON.stringify({ ...this.props.userInfo, type: "chat" }), sendUser: JSON.stringify(userInfo) })
+    this.props.asyncSetMessage()
+
     AuroraIController.appendMessages([message])
   }
 
@@ -367,8 +370,9 @@ class Index extends Component<any> {
       AuroraIController.scrollToBottom(true)
 
       //   await JMessage.sendImageMessage('single',this.props.route.params.id,v.mediaPath,{user:JSON.stringify({...this.props.RootStore.userInfo,type:'chat'})})
-      await JMessage.sendImageMessage(userInfo.uid, v.mediaPath, { userInfo: JSON.stringify({ ...this.props.userInfo, type: "chat" }) })
+      await JMessage.sendImageMessage(userInfo.uid, v.mediaPath, { userInfo: JSON.stringify({ ...this.props.userInfo, type: "chat" }), sendUser: JSON.stringify(userInfo) })
       //   // 发送完毕
+      this.props.asyncSetMessage()
       AuroraIController.updateMessage({ ...message, status: 'send_succeed' })
 
     })
@@ -545,7 +549,7 @@ class Index extends Component<any> {
     );
   }
 }
-const TestRNIMUI = connect(state => ({ userInfo: state.userInfo }), {})(Index)
+const TestRNIMUI = connect(state => ({ userInfo: state.userInfo }), { asyncSetMessage })(Index)
 export default TestRNIMUI
 const styles = StyleSheet.create({
   sendCustomBtn: {
