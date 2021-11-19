@@ -4,6 +4,7 @@ import MyText from '../../../compontents/MyText'
 import request from '../../../util/request'
 import stringfyquery from '../../../util/stringfyquery'
 import { connect } from 'react-redux'
+import PubSub from 'pubsub-js'
 interface ForumProps {
   navigation: any,
   userInfo?: any
@@ -26,8 +27,18 @@ function Index(props: ForumProps) {
       setpage(res.page)
       settotal(res.total)
     })
+    PubSub.subscribe('textArticle', () => {
+      getArtilce().then((res: any) => {
+        settextInfoArr(res.article)
+        setpage(res.page)
+        settotal(res.total)
+      })
+    })
+    return ()=>{
+      PubSub.unsubscribe('textArticle')
+    }
   }, [])
-  async function deletaArticle(article_id: any) {
+  async function deleteArticle(article_id: any) {
     await request.delete('/article' + stringfyquery({ uid: props.userInfo.uid, article_id }))
     getArtilce().then((res: any) => {
       settextInfoArr(res.article)
@@ -42,10 +53,10 @@ function Index(props: ForumProps) {
     <ScrollView style={{ flex: 1, backgroundColor: "#fff" }}>
       {
         textInfoArr.map((v: any) =>
-          <MyText deletaArticle={() => deletaArticle(v)}
+          <MyText deleteArticle={() => deleteArticle(v.article_id)}
             TextDate={v} key={v.article_id}
             gotoTextInfo={() => props.navigation.navigate('TextInfo', { TextDate: v })}
-            gotoUserDetail={()=>gotoUserDetail(v.uid)}
+            gotoUserDetail={() => gotoUserDetail(v.uid)}
           />)}
     </ScrollView>
   )

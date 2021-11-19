@@ -1,7 +1,7 @@
-import axios, { AxiosInstance,AxiosRequestConfig } from "axios";
+import axios, { AxiosInstance } from "axios";
 import store from "../redux/store";
-export const baseURL = 'http://192.168.137.170:3000'  //黑鬼
-// export const baseURL = 'http://192.168.253.193:3000' //小米
+// export const baseURL = 'http://192.168.137.170:3000'  //黑鬼
+export const baseURL = 'http://192.168.88.193:3000' //小米
 // export const baseURL = 'http://192.168.137.151:3000'
 // export const baseURL = 'http://192.168.43.137:3000'
 
@@ -9,7 +9,6 @@ export const baseURL = 'http://192.168.137.170:3000'  //黑鬼
 const request: AxiosInstance = axios.create({
   baseURL:baseURL+'/moveApp',
   timeout:5000,
-
 })
 // 添加请求拦截器
 request.interceptors.request.use(function (config) {

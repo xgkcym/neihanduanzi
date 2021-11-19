@@ -4,6 +4,7 @@ import { setUserInfo } from '../../redux/actions/userInfo'
 import { connect } from 'react-redux'
 import { UserType } from '../../util/usesType'
 import request,{baseURL} from '../../util/request'
+import stringfyquery from '../../util/stringfyquery'
 let userInfo: UserType | undefined
 interface indexProps {
   navigation?: any,
@@ -22,11 +23,10 @@ class index extends Component<indexProps> {
     this.props.userInfo?.uid?this.props.navigation.navigate('Setting'):Alert.alert('请登录')
   }
   async componentDidMount(){
-    const {userInfo} = this.state
-    const uid = {uid:userInfo?.uid}
-    const attention:any[] = await request.get('/attention',uid)
-    const black:any[] = await request.get('/black',uid)  
-    const fans:any[] = await request.get('/fans',uid)  
+    const attention:any = await request.get('/attention'+stringfyquery({uid:this.props.userInfo?.uid}))
+    const black:any = await request.get('/black'+stringfyquery({uid:this.props.userInfo?.uid}))  
+    const fans:any = await request.get('/fans'+stringfyquery({aid:this.props.userInfo?.uid}))  
+    this.setState({attention:attention.data,black:black.data,fans:fans.data})
   }
   render() {
     const {  attention,black,fans} = this.state

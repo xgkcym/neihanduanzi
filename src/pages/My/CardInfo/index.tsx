@@ -1,45 +1,68 @@
 import React, { Component } from 'react'
-import { Text, View, TouchableOpacity, Image } from 'react-native'
+import { Text, View, TouchableOpacity, Image, ScrollView, Alert } from 'react-native'
 import GobackTitle from '../../../compontents/GobackTitle'
-export default class CardInfo extends Component<any> {
+import request, { baseURL } from '../../../util/request'
+import stringfyquery from '../../../util/stringfyquery'
+import { connect } from 'react-redux'
+class Index extends Component<any> {
   constructor(props: any) {
     super(props)
     this.state.cardType = this.props.route.params.CardType
   }
   state = {
-    cardType: 0
+    cardType: 0,
+    cardList: [],
+  }
+  async componentDidMount() {
+    const { cardType } = this.state
+    if (cardType == 0) {
+      const { data } = await request.get('/attention' + stringfyquery({ uid: this.props.route.params.uid }))
+      this.setState({ cardList: data })
+    } else if (cardType == 1) {
+      const { data } = await request.get('/fans' + stringfyquery({ aid: this.props.route.params.uid }))
+      this.setState({ cardList: data })
+    } else if (cardType == 3) {
+      const { data } = await request.get('/black' + stringfyquery({ uid: this.props.route.params.uid }))
+      this.setState({ cardList: data })
+    }
+  }
+  gotoUserDetail = (uid: any) => {
+    this.props.navigation.replace('UserDetail', { uid })
   }
   render() {
-    const { cardType } = this.state
+    const { cardType, cardList } = this.state
+    console.log(cardList);
+
     let title = ''
     cardType == 0 ? title = "关注" :
       cardType == 1 ? title = "粉丝" :
-        cardType == 2 ? title = "粉丝" :
+        cardType == 2 ? title = "点赞" :
           cardType == 3 ? title = "拉黑" : title = ''
     return (
       <View>
         <GobackTitle title={title} props={this.props} />
-        <View style={{ marginTop: 10 }}>
+        <ScrollView style={{ marginTop: 10 }}>
           {
-            cardType == 0 ?
-              <View style={{ flexDirection: 'row', justifyContent: "space-between", height: 60, backgroundColor: "#fff", alignItems: 'center', borderBottomColor: "#ddd", borderBottomWidth: 1, paddingLeft: 15, paddingRight: 15 }}>
-                <TouchableOpacity style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Image source={require('../../../res/avatar.webp')} style={{ width: 50, height: 50, borderRadius: 25 }} />
-                  <View style={{marginLeft:10}}>
-                    <View style={{flexDirection:"row",alignItems:'center',marginBottom:3}}>
-                      <Text style={{fontSize:16}}>昵称</Text>
-                      <Text style={{fontFamily:'iconfont'}}>{'\ue60b'}</Text>
+            cardList.map((v: any) =>
+                <TouchableOpacity onPress={() => this.gotoUserDetail(v.uid)} key={v.uid} style={{ flexDirection: 'row', backgroundColor: "#fff", alignItems: 'center', height: 65, paddingLeft: 10, paddingRight: 10, borderBottomWidth: 1, borderBottomColor: "#ddd" }}>
+                  <Image source={{ uri: baseURL + v.avatar }} style={{ height: 50, width: 50, borderRadius: 25 }} />
+                  <View style={{ marginLeft: 10, height: '100%', flex: 1, justifyContent: "space-around" }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{ marginRight: 5, color: "#000", fontSize: 16 }}>{v.nickname}</Text>
+                      {v.gender == '0' ? <Text style={{ color: "#FF00FF", fontFamily: "iconfont" }}>{'\ue60c'}</Text> : <></>}
+                      {v.gender == '1' ? <Text style={{ color: "#4169E1", fontFamily: "iconfont" }}>{'\ue60b'}</Text> : <></>}
+                      <Text style={{ marginLeft: 5, color: "#666" }}>{v.city ? v.city : '中国'}</Text>
                     </View>
-                    <Text style={{marginTop:3,fontSize:15,color:'#666'}}>城市</Text>
+                    <Text style={{ color: "#666" }}>{v.individuality ? v.individuality : '这个人很懒什么都没写'}</Text>
                   </View>
                 </TouchableOpacity>
-                <TouchableOpacity style={{width:80,height:35,borderRadius:10,backgroundColor:'#f00',justifyContent:'center',alignItems:'center'}}>
-                  <Text style={{color:"#fff",fontSize:16}}><Text style={{fontFamily:"iconfont"}}></Text>关注</Text>
-                </TouchableOpacity>
-              </View> : <></>
+            )
+
           }
-        </View>
+        </ScrollView>
       </View>
     )
   }
 }
+const CardInfo = connect(state => ({ userInfo: state.userInfo }))(Index)
+export default CardInfo

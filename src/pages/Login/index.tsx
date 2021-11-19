@@ -50,9 +50,7 @@ class index extends Component<any, any> {
     this.props.asyncSetMessage()
     await AsyncStorage.setItem('userInfo', JSON.stringify(res.data))
     Alert.alert('登录成功')
-    this.props.navigation.goBack(()=>{
-      
-    })
+    this.props.navigation.replace('Tab')
   }
 
   zhece = async () => {
@@ -91,7 +89,7 @@ class index extends Component<any, any> {
         <StatusBar backgroundColor='transparent' barStyle={'dark-content'} />
         {/* 头部开始 */}
         <View style={style.LoginHeader}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={()=>this.props.navigation.goBack()}>
             <Text style={{ fontSize: 38, color: '#666' }}>×</Text>
           </TouchableOpacity>
           <TouchableOpacity>

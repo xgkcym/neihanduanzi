@@ -1,17 +1,30 @@
+import { NavigationContext } from '@react-navigation/core';
 import * as React from 'react';
 import { View, useWindowDimensions,Text,StyleSheet } from 'react-native';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
-
-
-const AttentionRoute = () => (
-  <View style={{ flex: 1, backgroundColor: '#673ab7' }} />
+import AllArticle from './AllArticle'
+import TextArticle from './TextArticle'
+const AllArticleRoute = () => (
+  <NavigationContext.Consumer>
+  {
+    (value: any) => (
+      <AllArticle navigation={value} />
+    )
+  }
+</NavigationContext.Consumer>
 );
-const ForumRoute = () => (
-  <View style={{ flex: 1, backgroundColor: '#673ab7' }} />
+const TextArticleRoute = () => (
+  <NavigationContext.Consumer>
+  {
+    (value: any) => (
+      <TextArticle navigation={value} />
+    )
+  }
+</NavigationContext.Consumer>
 );
 const renderScene = SceneMap({
-  attention: AttentionRoute,
-  forum: ForumRoute,
+  allArticle: AllArticleRoute,
+  textArticle: TextArticleRoute,
 });
 
 export default function TabCard() {
@@ -19,10 +32,12 @@ export default function TabCard() {
 
   const [index, setIndex] = React.useState(0);
   const [routes] = React.useState([
-    { key: 'attention', title: '全部'},
-    { key: 'forum', title: '论坛' },
+    { key: 'allArticle', title: '全部'},
+    { key: 'textArticle', title: '论坛' },
   ]);
-
+  React.useEffect(()=>{
+    
+  })
   return (
     <TabView
       renderTabBar={props => <TabBar {...props} renderLabel={({route})=><Text>{route.title}</Text>}  style={style.TabBar}/>}

@@ -8,7 +8,6 @@ import TabScreen from '..//Tab'
 import LoginScreen from '..//Login'
 import ChatScreen from '..//Message/Chat';
 import SettingScreen from '..//My/Setting';
-import MyInfoScreen from '..//My/MyInfo';
 import VideoInfoScreen from '..//VideoInfo';
 import PublishScreen from '..//My/Publish';
 import CopyreaderScreen from '..//My/Copyreader';
@@ -16,6 +15,8 @@ import IndividualityScreen from '..//My/Copyreader/Individuality';
 import ImageInfoScreen from '..//ImageInfo';
 import CardInfoScreen from '..//My/CardInfo';
 import TextInfoScreen from '../TextInfo'
+import SearchScreen from '../Search';
+import UserDetailScreen from '../My/UserDetail';
 import DomoScreen from '../Demo';
 import { setNavigation } from '../../redux/actions/navigation';
 import { setUserInfo } from '../../redux/actions/userInfo';
@@ -52,7 +53,7 @@ function Index(props: indexProps) {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Setting" component={SettingScreen} />
-          <Stack.Screen name="UserDetail" component={MyInfoScreen} />
+          <Stack.Screen name="UserDetail" component={UserDetailScreen} />
           <Stack.Screen name="VideoInfo" component={VideoInfoScreen} />
           <Stack.Screen name="Publish" component={PublishScreen} />
           <Stack.Screen name="Copyreader" component={CopyreaderScreen} />
@@ -60,6 +61,7 @@ function Index(props: indexProps) {
           <Stack.Screen name="ImageInfo" component={ImageInfoScreen} />
           <Stack.Screen name="CardInfo" component={CardInfoScreen} />
           <Stack.Screen name="TextInfo" component={TextInfoScreen} />
+          <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="Demo" component={DomoScreen} />
         </Stack.Navigator>
       </NavigationContainer>

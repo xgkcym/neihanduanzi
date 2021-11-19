@@ -1,31 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
 </head>
+
 <body>
   <script>
-     function lastTimeStr(time){
-       const now =new Date().getTime()/1000
-       const date = time/1000
-       let str = '刚刚'
-       if(now - date < 60*60 && now - date >= 60 ){
-          str = Math.floor((now - date)/60) +'分钟前' 
-       }else if(now - date < 60*60*24 && now - date >= 60*60){
-        str = Math.floor((now - date)/60/60) +'小时前' 
-       }else if(now - date < 60*60*24*30 && now - date >= 60*60*24){
-        str = Math.floor((now - date)/60/60/24) +'天前' 
-       }else if(now - date < 60*60*24*30*12 && now - date >= 60*60*24*30){
-        str = Math.floor((now - date)/60/60/24/30) +'月前' 
-       }else if(now - date > 60*60*24*30*12){
-          str  = new Date(time).toLocaleString().split(' ')[0]
-       }
-       return str
-     }
-     console.log(new Date().getTime());
+    let arr = [{
+      id:2,
+      name:'xgk'
+    },{
+      id:5,
+      name:"cym"
+    },{
+      id:1,
+      name:'xxx'
+    }]
+    function sortData(a, b) {
+      return b.id - a.id
+    }
+    arr.sort(sortData);
+    console.log(arr);
+
   </script>
 </body>
+
 </html>

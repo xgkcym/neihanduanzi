@@ -9,7 +9,6 @@ import TransitionEmoji from '../TransitionEmoji'
 interface MyTextProps {
   TextDate?: any,
   gotoTextInfo?: Function,
-  deletaArticle?: any,
   userInfo?: any,
   deleteArticle?: Function,
   gotoUserDetail?: Function

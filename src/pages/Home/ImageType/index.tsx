@@ -26,6 +26,16 @@ function Index(props: ImageTypeProps) {
       setpage(res.page)
       settotal(res.total)
     })
+    PubSub.subscribe('imageArticle', () => {
+      getArtilce().then((res: any) => {
+        setimageInfo(res.article)
+        setpage(res.page)
+        settotal(res.total)
+      })
+    })
+    return ()=>{
+      PubSub.unsubscribe('imageArticle')
+    }
   }, [])
   async function deletaArticle(article_id: any) {
     await request.delete('/article' + stringfyquery({ uid: props.userInfo.uid, article_id }))

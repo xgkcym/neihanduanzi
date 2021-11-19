@@ -26,6 +26,16 @@ function Index(props: RecommendProps) {
       setpage(res.page)
       settotal(res.total)
     })
+    PubSub.subscribe('videoArticle', () => {
+      getArtilce().then((res: any) => {
+        setVideoArr(res.article)
+        setpage(res.page)
+        settotal(res.total)
+      })
+    })
+    return ()=>{
+      PubSub.unsubscribe('videoArticle')
+    }
   }, [])
   function gotoVideoInfo(Video: any) {
     props.navigation.navigate('VideoInfo', { videoInfo: Video })
@@ -42,14 +52,14 @@ function Index(props: RecommendProps) {
     props.navigation.navigate('UserDetail', { uid })
   }
   return (
-    <           ScrollView style={{ backgroundColor: "#fff" }}>
+    <ScrollView style={{ backgroundColor: "#fff" }}>
       <StatusBar backgroundColor='transparent' barStyle={'dark-content'} />
       {
         VideoArr.map((v: any) =>
           <MyVideo key={v.article_id} VideoDate={v}
             gotoVideoInfo={() => gotoVideoInfo(v)}
             deleteArticle={() => deletaArticle(v.article_id)}
-            gotoUserDetail={()=>gotoUserDetail(v.uid)}
+            gotoUserDetail={() => gotoUserDetail(v.uid)}
           />)
       }
     </ScrollView>

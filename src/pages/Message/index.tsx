@@ -20,7 +20,7 @@ class Index extends Component<any, any> {
     this.props.navigation.navigate('Chat')
   }
   componentDidMount() {
-    // this.props.asyncSetMessage()
+    this.props.asyncSetMessage()
     // setInterval(() => {
     //   this.props.asyncSetMessage()
     // }, 500)
@@ -33,6 +33,8 @@ class Index extends Component<any, any> {
     }
   }
   render() {
+    console.log(this.props.jmessage);
+    
     return (
       <View>
         <StatusBar backgroundColor='transparent' barStyle={'dark-content'} />

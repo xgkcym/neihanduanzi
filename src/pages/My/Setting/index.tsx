@@ -4,6 +4,7 @@ import GobackTitle from '../../../compontents/GobackTitle'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { setUserInfo } from '../../../redux/actions/userInfo'
 import {connect} from 'react-redux'
+import PubSub from 'pubsub-js'
 interface indexProps{
   setUserInfo?:any,
   userInfo?:any,
@@ -14,6 +15,7 @@ interface indexProps{
     props.setUserInfo({uid:''})
     await AsyncStorage.setItem('userInfo',JSON.stringify({}))
     props.navigation.navigate('Tab',{initialRouteName:'My'})
+    PubSub.clearAllSubscriptions();
   }
   return (
     <View>

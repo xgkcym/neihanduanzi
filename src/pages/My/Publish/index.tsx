@@ -9,6 +9,7 @@ import { Alert } from 'react-native';
 import request from '../../../util/request';
 import Picker from 'react-native-picker';
 import { connect } from 'react-redux'
+import PubSub from 'pubsub-js'
 let imageArr: any[]
 let article_typeList: any[]
 class index extends Component<any> {
@@ -85,6 +86,7 @@ class index extends Component<any> {
   }
   publish = async () => {
     const { imageArr, videoInfo, title, article_type, loading } = this.state
+    console.log(1221);
     if (!loading) {
       this.setState({ loading: true })
       let imageList: any[]
@@ -118,9 +120,7 @@ class index extends Component<any> {
           }
         }
         res = await request.post('/article', { uid: this.props.userInfo.uid, title, content: content, article_type, content_type })
-        console.log(res);
-
-
+        PubSub.publish('videoArticle')
       }
       if (videoList.length > 0) {
         content_type = 'video'
@@ -142,9 +142,12 @@ class index extends Component<any> {
           }
         }
         res = await request.post('/article', { uid: this.props.userInfo.uid, title, content, content_type, article_type })
+        PubSub.publish('imageArticle')
       }
       if (imageList.length == 0 && videoInfo.length == 0) {
+
         res = await request.post('/article', { uid: this.props.userInfo.uid, title, content_type, article_type })
+        PubSub.publish('textArticle')
       }
       if (res.status == 200) {
         Alert.alert('发布论坛成功')
